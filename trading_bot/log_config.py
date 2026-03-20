@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 
-def setup_logging(log_path: str = "/opt/systemx/logs/bot.log") -> logging.Logger:
+def setup_logging(log_path: str = "trading_bot/logs/bot.log") -> logging.Logger:
     log_dir = Path(log_path).parent
     log_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
 

@@ -1,0 +1,11 @@
+2026-03-20 18:11:07 INFO     SYSTEM-X Bot starting up...
+2026-03-20 18:11:07 INFO     Poll thread started
+2026-03-20 18:11:07 ERROR    Error checking orders: Illegal header value b'Bearer '
+2026-03-20 18:11:07 ERROR    Error checking closed trades: Illegal header value b'Bearer '
+2026-03-20 18:11:37 ERROR    Error checking orders: Illegal header value b'Bearer '
+2026-03-20 18:11:38 ERROR    Error checking closed trades: Illegal header value b'Bearer '
+2026-03-20 18:12:08 ERROR    Error checking orders: Illegal header value b'Bearer '
+2026-03-20 18:12:08 ERROR    Error checking closed trades: Illegal header value b'Bearer '
+2026-03-20 18:12:38 ERROR    Error checking orders: Illegal header value b'Bearer '
+2026-03-20 18:12:38 ERROR    Error checking closed trades: Illegal header value b'Bearer '
+2026-03-20 18:13:07 INFO     SYSTEM-X Bot shutting down...
