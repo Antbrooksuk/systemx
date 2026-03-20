@@ -69,7 +69,7 @@ def save_parquet(candles: list[dict], output_path: Path):
             "Volume": int(c.get("volume", 0)),
         })
 
-    df = pd.DataFrame(rows, index=pd.to_datetime([c["time"] for c in candles]).tz_localize("UTC"))
+    df = pd.DataFrame(rows, index=pd.to_datetime([c["time"] for c in candles], utc=True))
     df = df.sort_index()
     df = df[~df.index.duplicated(keep='first')]
     df.to_parquet(output_path)
