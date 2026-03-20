@@ -114,7 +114,7 @@ class OANDAClient:
         a = data["account"]
         return AccountInfo(
             balance=float(a["balance"]),
-            equity=float(a["equity"]),
+            equity=float(a.get("NAV", a.get("equity", "0"))),
             unrealized_pl=float(a["unrealizedPL"]),
             currency=a["currency"],
         )

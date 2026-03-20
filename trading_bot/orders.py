@@ -110,8 +110,12 @@ class OrderManager:
                 open_time = trade.get("openTime", "")
 
                 pip_value = PAIR_CONFIG[pair]["pip_value"]
-                risk_pips = abs(entry_price - sl_price) / pip_value
-                pnl_pct = (unrealized_pl / 1000) * 100 if risk_pips > 0 else 0
+                try:
+                    acc = self.client.get_account()
+                    balance = acc.balance
+                except Exception:
+                    balance = 100000.0
+                pnl_pct = unrealized_pl / balance * 100 if balance > 0 else 0
 
                 filled = FilledTrade(
                     pair=pair,
