@@ -22,18 +22,13 @@ CANDLES_PER_REQUEST = 5000
 
 def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime, to_dt: datetime) -> list[dict]:
     candles = []
-    use_to = False
-    current_to = to_dt
 
     while True:
         params = {
             "granularity": "M5",
             "count": CANDLES_PER_REQUEST,
+            "to": to_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
-        if use_to:
-            params["to"] = current_to.strftime("%Y-%m-%dT%H:%M:%SZ")
-        else:
-            params["from"] = from_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         price = client._get(f"/v3/instruments/{instrument}/candles", params=params)
 
@@ -41,16 +36,19 @@ def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime,
         if not batch:
             break
 
+        oldest = datetime.fromisoformat(batch[0]["time"].replace("Z", ""))
+        if oldest <= from_dt:
+            batch = [c for c in batch if datetime.fromisoformat(c["time"].replace("Z", "")) >= from_dt]
+            candles.extend(batch)
+            break
+
         candles.extend(batch)
 
         if price.get("complete", False) or len(batch) < CANDLES_PER_REQUEST:
             break
 
-        last_time = datetime.fromisoformat(batch[-1]["time"].replace("Z", ""))
-        if last_time <= from_dt:
-            break
-        current_to = last_time
-        use_to = True
+        oldest = datetime.fromisoformat(batch[0]["time"].replace("Z", ""))
+        to_dt = oldest
 
         time.sleep(0.25)
 
@@ -73,6 +71,7 @@ def save_parquet(candles: list[dict], output_path: Path):
 
     df = pd.DataFrame(rows, index=pd.to_datetime([c["time"] for c in candles]).tz_localize("UTC"))
     df = df.sort_index()
+    df = df[~df.index.duplicated(keep='first')]
     df.to_parquet(output_path)
     print(f"  Saved {output_path.name}: {len(df)} candles, {df.index[0].date()} to {df.index[-1].date()}")
 
