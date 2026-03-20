@@ -1,7 +1,7 @@
 "use client";
 
-import { useLive, LiveOrder, LiveTrade } from "../hooks/useLive";
-import { StatCard } from "../components/StatCard";
+import { useLive, LiveOrder, LiveTrade } from "../../hooks/useLive";
+import { StatCard } from "../../components/StatCard";
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -28,7 +28,7 @@ function formatMoney(value: number, currency: string): string {
   return `${sign}£${value.toFixed(2)}`;
 }
 
-function SessionPanel({ session, candleCountdown }: { session: any; candleCountdown: number | null }) {
+function SessionPanel({ session, candleCountdown }: { session: any; candleCountdown: number | null | undefined }) {
   if (!session) {
     return (
       <div className="bg-card border border-border rounded-lg p-4">
