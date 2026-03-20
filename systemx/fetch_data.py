@@ -22,17 +22,20 @@ CANDLES_PER_REQUEST = 5000
 
 def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime, to_dt: datetime) -> list[dict]:
     candles = []
+    use_to = False
+    current_to = to_dt
 
     while True:
-        price = client._get(
-            f"/v3/instruments/{instrument}/candles",
-            params={
-                "from": from_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "to": to_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "granularity": "M5",
-                "count": CANDLES_PER_REQUEST,
-            },
-        )
+        params = {
+            "granularity": "M5",
+            "count": CANDLES_PER_REQUEST,
+        }
+        if use_to:
+            params["to"] = current_to.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            params["from"] = from_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        price = client._get(f"/v3/instruments/{instrument}/candles", params=params)
 
         batch = price.get("candles", [])
         if not batch:
@@ -46,7 +49,8 @@ def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime,
         last_time = datetime.fromisoformat(batch[-1]["time"].replace("Z", "+00:00"))
         if last_time <= from_dt:
             break
-        to_dt = last_time
+        current_to = last_time
+        use_to = True
 
         time.sleep(0.25)
 
