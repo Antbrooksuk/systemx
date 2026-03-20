@@ -175,6 +175,13 @@ class OrderManager:
                 pip_value = PAIR_CONFIG[OANDA.from_oanda_symbol(pair)]["pip_value"]
                 pips = pl / pip_value / 10
 
+                try:
+                    acc = self.client.get_account()
+                    balance = acc.balance
+                except Exception:
+                    balance = 100000.0
+                pnl_pct = pl / balance * 100 if balance > 0 else 0
+
                 existing = next(
                     (t for t in state.filled_trades if t.oanda_trade_id == trade_id),
                     None,
@@ -185,7 +192,7 @@ class OrderManager:
                         existing.exit_price = exit_price
                         existing.exit_reason = "TP" if pl > 0 else ("SL" if pl < 0 else "CLOSED")
                         existing.pips = round(pips, 1)
-                        existing.pnl_pct = round(pl / 1000 * 100, 4)
+                        existing.pnl_pct = round(pnl_pct, 4)
                     continue
 
                 if close_time:
@@ -210,7 +217,7 @@ class OrderManager:
                         exit_price=exit_price,
                         exit_reason=exit_reason,
                         pips=round(pips, 1),
-                        pnl_pct=round(pl / 1000 * 100, 4),
+                        pnl_pct=round(pnl_pct, 4),
                         oanda_trade_id=trade_id,
                         completed_at=datetime.utcnow(),
                     )
