@@ -82,7 +82,11 @@ class BotState:
                     data = json.load(f)
                     trades_data = data.get('trades', [])
                     for t in trades_data:
-                        self.filled_trades.append(FilledTrade(**t))
+                        try:
+                            self.filled_trades.append(FilledTrade(**t))
+                        except Exception as trade_error:
+                            print(f"Failed to load trade {t.get('oanda_trade_id', 'unknown')}: {trade_error}")
+                            continue
                     self.total_pnl_pct = data.get('total_pnl_pct', 0.0)
             except Exception as e:
                 print(f"Failed to load trades from file: {e}")
