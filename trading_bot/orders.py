@@ -119,6 +119,20 @@ class OrderManager:
                 oanda_pair = trade.get("instrument")
                 pair = OANDA.from_oanda_symbol(oanda_pair)
                 units = int(trade.get("currentUnits", 0))
+                open_time_str = trade.get("openTime", "")
+                open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00")) if open_time_str else datetime.utcnow()
+                candles_open = (datetime.utcnow() - open_time_dt).total_seconds() / 300
+
+                if candles_open >= MAX_CANDLES:
+                    try:
+                        self.client.close_trade(trade_id)
+                        log.info(
+                            f"TIME STOP: closing trade {trade_id} {pair} "
+                            f"({candles_open:.1f} candles open)"
+                        )
+                        continue
+                    except Exception as e:
+                        log.error(f"Failed to time stop trade {trade_id}: {e}")
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
                 sl_price = float(trade.get("stopLossOrder", {}).get("price", 0))
