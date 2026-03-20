@@ -35,7 +35,8 @@ class OrderManager:
         units = int(risk_amount / (sl_distance_pips * pip_value))
 
         MARGIN_RATE = 0.025
-        max_units_by_margin = int(balance / (entry_price * pip_value * MARGIN_RATE)) if pip_value > 0 else 0
+        notional_per_unit = entry_price * pip_value
+        max_units_by_margin = int(balance * MARGIN_RATE / notional_per_unit) if notional_per_unit > 0 else 0
         units = min(units, max_units_by_margin)
 
         if units == 0:
