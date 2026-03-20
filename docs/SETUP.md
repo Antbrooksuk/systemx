@@ -6,7 +6,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 
 - **Broker:** OANDA (practice account)
 - **Account:** £100,000 GBP
-- **Pairs:** EURUSD, GBPUSD, USDJPY
+- **Pairs:** EURUSD, GBPUSD, USDJPY, EURJPY (EURJPY in backtest bench, pending live)
 - **Sessions:** London 08:00–10:00 UTC, NY 14:30–16:30 UTC
 - **Strategy:** Mode X — impulse candle + pullback candle + limit entry + SL/TP + 4-candle time stop
 - **Framework:** Python/FastAPI bot, Next.js dashboard
@@ -49,7 +49,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 | Session | Time (UTC) | Pairs |
 |---|---|---|
 | London | 08:00–10:00 | EURUSD, GBPUSD |
-| NY | 14:30–16:30 | EURUSD, GBPUSD, USDJPY |
+| NY | 14:30–16:30 | EURUSD, GBPUSD, USDJPY, EURJPY |
 
 ### Order flow
 
@@ -66,6 +66,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 | EURUSD | EUR_USD |
 | GBPUSD | GBP_USD |
 | USDJPY | USD_JPY |
+| EURJPY | EUR_JPY |
 
 ### Spread assumptions
 
@@ -74,6 +75,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 | EURUSD | 0.6 pip |
 | GBPUSD | 1.2 pip |
 | USDJPY | 0.7 pip |
+| EURJPY | 1.0 pip |
 
 ---
 
@@ -100,7 +102,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 | X-Plus | 2 pip | 2R | Tighter pullback (≥34%) |
 | X-Elite | 2 pip | 1.75R | Tightest filters, highest skip rate |
 
-### Backtest results (Jan 2025 – Mar 2026, spread + slippage modeled)
+### Backtest results (Jan 2025 – Mar 2026, spread + slippage modeled, 3 pairs)
 
 | Strategy | WR | Final £ | Max DD | Trades | Skip % |
 |---|---|---|---|---|---|
@@ -109,6 +111,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 | X-Elite | 64.7% | £3,652 | 5.1% | 255 | 81% |
 
 X-Base wins on total P&L due to higher trade volume. All modes are profitable.
+EURJPY added to backtest bench — pending re-run with new data download.
 
 ---
 

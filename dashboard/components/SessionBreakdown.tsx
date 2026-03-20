@@ -14,7 +14,7 @@ export function SessionBreakdown({ trades }: SessionBreakdownProps) {
   const londonTrades = executedTrades.filter((t) => t.session === "london");
   const nyTrades = executedTrades.filter((t) => t.session === "ny");
 
-  const allPairs = ["EURUSD", "GBPUSD", "USDJPY"];
+  const allPairs = ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"];
 
   const getSessionStats = (sessionTrades: Trade[]) => {
     const wins = sessionTrades.filter((t) => t.exit_reason === "TP").length;

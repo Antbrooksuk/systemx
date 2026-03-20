@@ -19,7 +19,7 @@ function formatUptime(seconds: number): string {
 }
 
 function formatPip(price: number, pair: string): string {
-  const decimals = pair === "USDJPY" ? 3 : 5;
+  const decimals = pair.endsWith("JPY") ? 3 : 5;
   return price.toFixed(decimals);
 }
 
