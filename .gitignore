@@ -1,0 +1,61 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# IDE
+.idea/
+
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.npmrc
+
+# Act runner files
+.secrets
+.env.act
+.act-artifacts/
+
+# Testing
+coverage
+
+# Turbo
+.turbo
+
+# Vercel
+.vercel
+
+# Build Outputs
+.next/
+out/
+build
+dist
+storybook-static
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
+.DS_Store
+*.pem
+
+# Terraform
+.terraform
+
+# Justfiles
+.justfile
+.*.just
+
+# Tool directories
+/.claude/
+/.roo/
+/.cursor/
+# pnpm audit temp file
+npm-audit/.audit-tmp.json
