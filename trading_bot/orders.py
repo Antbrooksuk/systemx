@@ -1,6 +1,6 @@
 """Order management — places, monitors, and manages limit orders."""
 from datetime import datetime
-from trading_bot.oanda import OANDAClient
+from trading_bot.oanda import OANDAClient, OANDAClient as OANDA
 from trading_bot.state import state, ActiveOrder, FilledTrade
 from trading_bot.log_config import log
 from mode_b import PAIR_CONFIG
@@ -109,7 +109,7 @@ class OrderManager:
                 unrealized_pl = float(trade.get("unrealizedPL", 0))
                 open_time = trade.get("openTime", "")
 
-                pip_value = PAIR_CONFIG[pair]["pip_value"]
+                pip_value = PAIR_CONFIG[OANDA.from_oanda_symbol(pair)]["pip_value"]
                 try:
                     acc = self.client.get_account()
                     balance = acc.balance
@@ -169,7 +169,7 @@ class OrderManager:
                 close_time = trade.get("closeTime", "")
                 open_time = trade.get("openTime", "")
 
-                pip_value = PAIR_CONFIG[pair]["pip_value"]
+                pip_value = PAIR_CONFIG[OANDA.from_oanda_symbol(pair)]["pip_value"]
                 pips = pl / pip_value / 10
 
                 existing = next(

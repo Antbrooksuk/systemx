@@ -53,6 +53,11 @@ class OANDAClient:
         mapping = {"EURUSD": "EUR_USD", "GBPUSD": "GBP_USD", "USDJPY": "USD_JPY"}
         return mapping.get(pair, pair.replace("USD", "_USD"))
 
+    @staticmethod
+    def from_oanda_symbol(oanda_symbol: str) -> str:
+        mapping = {"EUR_USD": "EURUSD", "GBP_USD": "GBPUSD", "USD_JPY": "USDJPY"}
+        return mapping.get(oanda_symbol, oanda_symbol.replace("_", ""))
+
     def _get(self, path: str, params: Optional[dict] = None) -> dict:
         with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
             resp = client.get(path, params=params)
