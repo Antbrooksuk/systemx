@@ -18,7 +18,8 @@ function formatUptime(seconds: number): string {
   return `${h}h ${m}m`;
 }
 
-function formatPip(price: number, pair: string): string {
+function formatPip(price: number | undefined | null, pair: string): string {
+  if (price == null) return "—";
   const decimals = pair.endsWith("JPY") ? 3 : 5;
   return price.toFixed(decimals);
 }
@@ -26,7 +27,7 @@ function formatPip(price: number, pair: string): string {
 function formatMoney(value: number | undefined | null, currency: string): string {
   if (value == null) return "—";
   const sign = value >= 0 ? "+" : "";
-  return `${sign}£${value.toFixed(2)}`;
+  return `${sign}£${(value ?? 0).toFixed(2)}`;
 }
 
 function SessionPanel({ session, candleCountdown }: { session: any; candleCountdown: number | null | undefined }) {
@@ -136,14 +137,14 @@ function OrdersTable({ orders }: { orders: LiveOrder[] }) {
         <tbody>
           {orders.map((o) => (
             <tr key={o.id} className="border-t border-border">
-              <td className="py-2 pr-3 text-fg">{o.pair}</td>
-              <td className={`py-2 pr-3 ${o.direction === "long" ? "text-profit" : "text-loss"}`}>
-                {o.direction.toUpperCase()}
+              <td className="py-2 pr-3 text-fg">{o.pair ?? "—"}</td>
+              <td className={`py-2 pr-3 ${(o.direction ?? "") === "long" ? "text-profit" : "text-loss"}`}>
+                {(o.direction ?? "—").toUpperCase()}
               </td>
-              <td className="py-2 pr-3 text-right text-warn">{o.type}</td>
-              <td className="py-2 pr-3 text-right">{formatPip(o.price, o.pair)}</td>
-              <td className="py-2 pr-3 text-right text-loss">{formatPip(o.sl, o.pair)}</td>
-              <td className="py-2 text-right text-profit">{formatPip(o.tp, o.pair)}</td>
+              <td className="py-2 pr-3 text-right text-warn">{o.type ?? "LIMIT"}</td>
+              <td className="py-2 pr-3 text-right">{formatPip(o.price, o.pair ?? "EURUSD")}</td>
+              <td className="py-2 pr-3 text-right text-loss">{formatPip(o.sl, o.pair ?? "EURUSD")}</td>
+              <td className="py-2 text-right text-profit">{formatPip(o.tp, o.pair ?? "EURUSD")}</td>
             </tr>
           ))}
         </tbody>
@@ -180,14 +181,14 @@ function TradesTable({ trades }: { trades: LiveTrade[] }) {
           {trades.map((t) => (
             <tr key={t.id} className="border-t border-border">
               <td className="py-2 pr-3 text-fg">{t.pair}</td>
-              <td className={`py-2 pr-3 ${t.direction === "long" ? "text-profit" : "text-loss"}`}>
-                {t.direction.toUpperCase()}
+              <td className={`py-2 pr-3 ${(t.direction ?? "") === "long" ? "text-profit" : "text-loss"}`}>
+                {(t.direction ?? "—").toUpperCase()}
               </td>
               <td className="py-2 pr-3 text-right">{t.units}</td>
               <td className="py-2 pr-3 text-right">{formatPip(t.price, t.pair)}</td>
               <td className="py-2 pr-3 text-right">{formatPip(t.current_price, t.pair)}</td>
-              <td className={`py-2 text-right ${t.unrealized_pl >= 0 ? "text-profit" : "text-loss"}`}>
-                {t.unrealized_pl >= 0 ? "+" : ""}{t.unrealized_pl.toFixed(2)}
+              <td className={`py-2 text-right ${(t.unrealized_pl ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
+                {((t.unrealized_pl ?? 0) >= 0 ? "+" : ""}{(t.unrealized_pl ?? 0).toFixed(2)}
               </td>
             </tr>
           ))}
