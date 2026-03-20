@@ -76,6 +76,7 @@ PAIR_CONFIG = {
     "EURUSD": {"max_pd_range_pips": 150, "pip_value": 0.0001, "spread_pips": 0.6},
     "GBPUSD": {"max_pd_range_pips": 180, "pip_value": 0.0001, "spread_pips": 1.2},
     "USDJPY": {"max_pd_range_pips": 150, "pip_value": 0.01, "spread_pips": 0.7},
+    "EURJPY": {"max_pd_range_pips": 150, "pip_value": 0.01, "spread_pips": 1.0},
 }
 
 CONFIRM_BODY_MIN_PCT = 0.70
