@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from typing import Dict
+from typing import Dict, Optional
 import pandas as pd
 from pathlib import Path
 
@@ -62,8 +62,11 @@ def extract_session(df: pd.DataFrame, target_date: date, window: str) -> pd.Data
     return df_day.between_time(start, end)
 
 
-def run_backtest(year: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01) -> Dict:
+def run_backtest(year: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01, sl_override: Optional[int] = None) -> Dict:
     set_strategy(strategy)
+    if sl_override is not None:
+        import mode_b
+        mode_b.SL_OFFSET_PIPS = sl_override
     data = load_data(year)
 
     capital = starting_capital
@@ -143,6 +146,7 @@ def run_backtest(year: int = 0, strategy: str = "base", starting_capital: float 
                     trade_params=trade_params,
                     post_candles=post_candles,
                     pair=pair,
+                    account_gbp=capital,
                     risk_pct=risk_pct,
                     max_candles=TIME_STOP_CANDLES
                 )
@@ -217,6 +221,9 @@ def run_backtest(year: int = 0, strategy: str = "base", starting_capital: float 
     roi = round((capital - starting_capital) / starting_capital * 100, 1)
     max_dd_pct = round(max_dd * 100, 1)
 
+    import mode_b
+    sl_offset_pips = mode_b.SL_OFFSET_PIPS
+
     return {
         "starting_capital": starting_capital,
         "final_capital": round(capital, 2),
@@ -233,6 +240,7 @@ def run_backtest(year: int = 0, strategy: str = "base", starting_capital: float 
         "trades": trades,
         "strategy": strategy,
         "strategy_label": STRATEGY_PRESETS[strategy]["label"],
+        "sl_offset_pips": sl_offset_pips,
     }
 
 

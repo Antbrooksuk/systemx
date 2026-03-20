@@ -7,9 +7,13 @@ interface SessionBreakdownProps {
 }
 
 export function SessionBreakdown({ trades }: SessionBreakdownProps) {
-  const executedTrades = trades.filter((t) => t.signal !== "SKIP" && t.filled !== false);
+  const executedTrades = trades.filter(
+    (t) => t.signal !== "SKIP" && t.filled !== false,
+  );
   const skippedTrades = trades.filter((t) => t.signal === "SKIP");
   const unfilledTrades = trades.filter((t) => t.exit_reason === "LIMIT");
+
+  const slOffsetPips = (trades[0] as any)?.sl_offset_pips;
 
   const londonTrades = executedTrades.filter((t) => t.session === "london");
   const nyTrades = executedTrades.filter((t) => t.session === "ny");
@@ -17,22 +21,37 @@ export function SessionBreakdown({ trades }: SessionBreakdownProps) {
   const allPairs = ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"];
 
   const getSessionStats = (sessionTrades: Trade[]) => {
-    const wins = sessionTrades.filter((t) => t.exit_reason === "TP").length;
-    const losses = sessionTrades.filter(
-      (t) => t.exit_reason !== "TP" && t.exit_reason !== "NONE",
-    ).length;
+    const wins = sessionTrades.filter((t) => (t.pnl_pct ?? 0) > 0);
+    const losses = sessionTrades.filter((t) => (t.pnl_pct ?? 0) < 0);
+    
+    // Find biggest win and loss by P&L% directly
+    const maxWin = wins.reduce((max, t) => (t.pnl_pct ?? 0) > (max.pnl_pct ?? -1) ? t : max, { pnl_pct: -Infinity });
+    const maxLoss = losses.reduce((min, t) => (t.pnl_pct ?? 0) < (min.pnl_pct ?? Infinity) ? t : min, { pnl_pct: Infinity });
+    
+    // Use starting capital of £2000 for GBP calculation
+    const STARTING_CAPITAL = 2000;
+    
+    // Calculate GBP from P&L% directly (accounts for compounding)
+    const maxWinGBP = maxWin.pnl_pct / 100 * STARTING_CAPITAL;
+    const maxLossGBP = Math.abs(maxLoss.pnl_pct / 100 * STARTING_CAPITAL);
+    
     const wr = sessionTrades.length
-      ? ((wins / sessionTrades.length) * 100).toFixed(1)
+      ? ((wins.length / sessionTrades.length) * 100).toFixed(1)
       : "0.0";
-    return { total: sessionTrades.length, wins, losses, wr };
+    return {
+      total: sessionTrades.length,
+      wins: wins.length,
+      losses: losses.length,
+      wr,
+      maxWinGBP,
+      maxLossGBP,
+    };
   };
 
   const getPairStats = (pair: string) => {
     const pairTrades = executedTrades.filter((t) => t.pair === pair);
-    const wins = pairTrades.filter((t) => t.exit_reason === "TP").length;
-    const losses = pairTrades.filter(
-      (t) => t.exit_reason !== "TP" && t.exit_reason !== "NONE",
-    ).length;
+    const wins = pairTrades.filter((t) => (t.pnl_pct ?? 0) > 0).length;
+    const losses = pairTrades.filter((t) => (t.pnl_pct ?? 0) < 0).length;
     const wr = pairTrades.length
       ? ((wins / pairTrades.length) * 100).toFixed(1)
       : "0.0";
@@ -76,6 +95,9 @@ export function SessionBreakdown({ trades }: SessionBreakdownProps) {
     <div className="bg-card border border-border rounded-lg p-4">
       <div className="text-muted text-xs uppercase tracking-wider mb-3">
         Breakdown
+        {slOffsetPips && (
+          <span className="ml-4 text-profit">SL: {slOffsetPips} pips</span>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-4">
@@ -104,36 +126,44 @@ export function SessionBreakdown({ trades }: SessionBreakdownProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <div className="text-sm font-medium mb-2">By Session</div>
-          <table className="w-full text-sm font-mono">
-            <thead>
-              <tr className="text-muted text-xs">
-                <th className="text-left pb-1">Session</th>
-                <th className="text-right pb-1">Trades</th>
-                <th className="text-right pb-1">WR</th>
+      <div className="mb-4">
+        <div className="text-sm font-medium mb-2">By Session</div>
+        <table className="w-full text-sm font-mono">
+          <thead>
+            <tr className="text-muted text-xs">
+              <th className="text-left pb-1">Session</th>
+              <th className="text-right pb-1">Trades</th>
+              <th className="text-right pb-1">WR</th>
+              <th className="text-right pb-1">Biggest Win</th>
+              <th className="text-right pb-1">Biggest Loss</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { label: "London", s: london },
+              { label: "New York", s: ny },
+            ].map(({ label, s }) => (
+              <tr key={label} className="border-t border-border">
+                <td className="py-1 text-muted">{label}</td>
+                <td className="py-1 text-right">
+                  <span className="text-profit">{s.wins}W</span>
+                  <span className="text-muted"> / </span>
+                  <span className="text-loss">{s.losses}L</span>
+                </td>
+                <td className="py-1 text-right">{s.wr}%</td>
+                <td className="py-1 text-right text-profit">
+                  +£{s.maxWinGBP.toFixed(2)}
+                </td>
+                <td className="py-1 text-right text-loss">
+                  -£{s.maxLossGBP.toFixed(2)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {[
-                { label: "London", s: london },
-                { label: "New York", s: ny },
-              ].map(({ label, s }) => (
-                <tr key={label} className="border-t border-border">
-                  <td className="py-1 text-muted">{label}</td>
-                  <td className="py-1 text-right">
-                    <span className="text-profit">{s.wins}W</span>
-                    <span className="text-muted"> / </span>
-                    <span className="text-loss">{s.losses}L</span>
-                  </td>
-                  <td className="py-1 text-right">{s.wr}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
+      <div className="">
         <div className="sm:col-span-2">
           <div className="text-sm font-medium mb-2">By Pair</div>
           <table className="w-full text-sm font-mono">
@@ -165,7 +195,7 @@ export function SessionBreakdown({ trades }: SessionBreakdownProps) {
       </div>
 
       {(skipReasons.length > 0 || unfilledTrades.length > 0) && (
-        <div className="mt-4 pt-3 border-t border-border">
+        <div className="mt-4 pt-3">
           {unfilledTrades.length > 0 && (
             <div className="mb-2 text-xs font-mono">
               <span className="text-orange-400">Unfilled: </span>

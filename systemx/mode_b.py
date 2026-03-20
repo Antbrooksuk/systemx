@@ -73,16 +73,16 @@ class SetupResult:
 ENTRY_AT_EXTREME = True
 
 PAIR_CONFIG = {
-    "EURUSD": {"max_pd_range_pips": 150, "pip_value": 0.0001, "spread_pips": 0.6},
-    "GBPUSD": {"max_pd_range_pips": 180, "pip_value": 0.0001, "spread_pips": 1.2},
-    "USDJPY": {"max_pd_range_pips": 150, "pip_value": 0.01, "spread_pips": 0.7},
-    "EURJPY": {"max_pd_range_pips": 150, "pip_value": 0.01, "spread_pips": 1.0},
+    "EURUSD": {"max_pd_range_pips": 150, "pip_value": 0.0001, "spread_pips": 0.6, "gbp_per_pip": 0.085},
+    "GBPUSD": {"max_pd_range_pips": 180, "pip_value": 0.0001, "spread_pips": 1.2, "gbp_per_pip": 0.10},
+    "USDJPY": {"max_pd_range_pips": 150, "pip_value": 0.01, "spread_pips": 0.7, "gbp_per_pip": 0.053},
+    "EURJPY": {"max_pd_range_pips": 150, "pip_value": 0.01, "spread_pips": 1.0, "gbp_per_pip": 0.053},
 }
 
 CONFIRM_BODY_MIN_PCT = 0.70
 RETREAT_BODY_MIN_PCT = 0.20
 RETREAT_BODY_MAX_PCT = 0.50
-SL_OFFSET_PIPS = 40
+SL_OFFSET_PIPS = 3
 MIN_RR = 2.0
 TIME_STOP_CANDLES = 4
 RISK_PER_TRADE = 0.01
@@ -153,7 +153,6 @@ def pips_to_price(pips: float, pair: str) -> float:
 
 def price_to_pips(price_diff: float, pair: str) -> float:
     return abs(price_diff / PAIR_CONFIG[pair]["pip_value"])
-
 
 def analyse_setup(
     pd_candles: pd.DataFrame,
@@ -282,12 +281,21 @@ def calculate_entry(
     )
 
 
+def calculate_units_for_risk(risk_gbp: float, sl_pips: float, pair: str) -> int:
+    gbp_per_pip_1000_units = PAIR_CONFIG[pair]["gbp_per_pip"]
+    gbp_per_pip_one_unit = gbp_per_pip_1000_units / 1000.0
+    units = risk_gbp / (sl_pips * gbp_per_pip_one_unit)
+    return int(units)
+
+
+
 def simulate_trade(
     trade_params: TradeParams,
     post_candles: pd.DataFrame,
     pair: str,
-    risk_pct: float = 1.0,
-    max_candles: int = 18
+    account_gbp: float = 2000.0,
+    risk_pct: float = 0.01,
+    max_candles: int = 4
 ) -> TradeResult:
     if trade_params is None or post_candles.empty:
         return TradeResult(
@@ -300,6 +308,9 @@ def simulate_trade(
             filled=False,
         )
 
+    if account_gbp <= 0:
+        raise ValueError(f"Invalid account_gbp: {account_gbp}")
+
     entry = trade_params.entry
     sl = trade_params.stop_loss
     tp = trade_params.take_profit
@@ -308,6 +319,11 @@ def simulate_trade(
     spread_pips = PAIR_CONFIG[pair]["spread_pips"]
     spread_value = spread_pips * pip_value
     sl_slippage_value = 0.3 * pip_value
+    gbp_per_pip = PAIR_CONFIG[pair]["gbp_per_pip"]
+
+    risk_gbp = account_gbp * risk_pct
+    sl_pips = abs(entry - sl) / pip_value
+    units = calculate_units_for_risk(risk_gbp, sl_pips, pair)
 
     if direction == "LONG":
         effective_entry = entry + spread_value
@@ -382,7 +398,8 @@ def simulate_trade(
     else:
         pips = (effective_entry - exit_price) / pip_value
 
-    pnl_pct = (pips / risk_pips) * 100.0 * risk_pct if risk_pips > 0 else 0
+    pnl_gbp = pips * gbp_per_pip * (units / 1000.0)
+    pnl_pct = (pnl_gbp / account_gbp) * 100.0
 
     return TradeResult(
         exit_price=exit_price,

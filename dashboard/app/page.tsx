@@ -169,7 +169,7 @@ export default function Dashboard() {
 
         <EquityCurve data={state.equity_curve} />
 
-        <TradeLog trades={state.trades} />
+        <TradeLog trades={state.trades} equityCurve={state.equity_curve} />
 
         <SessionBreakdown trades={state.trades} />
 

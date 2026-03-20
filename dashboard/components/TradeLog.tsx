@@ -4,10 +4,41 @@ import { Trade } from "../lib/types";
 
 interface TradeLogProps {
   trades: Trade[];
+  equityCurve: { trade: number; equity: number }[];
 }
 
-export function TradeLog({ trades }: TradeLogProps) {
-  const sortedTrades = [...trades].reverse();
+export function TradeLog({ trades, equityCurve }: TradeLogProps) {
+  // Filter to filled trades only and sort chronologically
+  const filledTrades = [...trades].filter(t => t.signal !== "SKIP" && t.filled !== false)
+    .sort((a, b) => {
+      const dateA = a.date || "";
+      const dateB = b.date || "";
+      return dateA.localeCompare(dateB);
+    });
+
+  // Build capital before map from filled trades (indices 0 to filledTrades.length-1)
+  const capitalBeforeTrade: Record<number, number> = {};
+  for (let i = 0; i < equityCurve.length && i < filledTrades.length; i++) {
+    capitalBeforeTrade[i + 1] = equityCurve[i]?.equity || 2000;
+  }
+
+  const getRiskGBP = (trade: Trade, tradeIndex: number): string => {
+    // For filled trades, get capital before this trade
+    const capitalBefore = capitalBeforeTrade[tradeIndex] || 2000;
+    const riskGBP = capitalBefore * 0.01;
+    
+    return `£${riskGBP.toFixed(2)}`;
+  };
+
+  const getPnlGBP = (trade: Trade, tradeIndex: number): string => {
+    // For filled trades, get capital before this trade
+    const capitalBefore = capitalBeforeTrade[tradeIndex] || 2000;
+    
+    // Calculate P&L in GBP based on actual account change
+    const pnlGBP = (trade.pnl_pct / 100) * capitalBefore;
+
+    return `£${pnlGBP.toFixed(2)}`;
+  };
 
   const getSignalColor = (signal: string) => {
     if (signal === "LONG") return "text-profit";
@@ -33,16 +64,16 @@ export function TradeLog({ trades }: TradeLogProps) {
     if (!date) return "-";
     try {
       const d = new Date(date);
-      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     } catch {
       return date.slice(0, 10);
     }
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 h-[500px] overflow-hidden flex flex-col">
+    <div className="bg-card border border-border rounded-lg p-4 h-[550px] overflow-hidden flex flex-col">
       <div className="text-muted text-xs uppercase tracking-wider mb-2">
-        Trade Log ({trades.length} trades)
+        Trade Log ({filledTrades.length} trades)
       </div>
       <div className="flex-1 overflow-y-auto">
         <table className="w-full text-xs font-mono">
@@ -57,16 +88,19 @@ export function TradeLog({ trades }: TradeLogProps) {
               <th className="text-right pb-2 pr-4">Entry</th>
               <th className="text-right pb-2 pr-4">Exit</th>
               <th className="text-right pb-2 pr-4">Pips</th>
-              <th className="text-right pb-2">P&L%</th>
+              <th className="text-right pb-2 pr-4">P&L%</th>
+              <th className="text-right pb-2 pr-4">P&L (£)</th>
             </tr>
           </thead>
           <tbody>
-            {sortedTrades.map((trade, idx) => (
+            {filledTrades.map((trade, idx) => {
+              const tradeIndex = idx + 1;
+              return (
               <tr
                 key={idx}
                 className={`border-t border-border ${trade.exit_reason === "LIMIT" ? "opacity-50" : ""}`}
               >
-                <td className="py-1.5 pr-4 text-muted">{idx + 1}</td>
+                <td className="py-1.5 pr-4 text-muted">{tradeIndex}</td>
                 <td className="py-1.5 pr-4 text-muted">
                   {formatDate(trade.date)}
                 </td>
@@ -75,12 +109,10 @@ export function TradeLog({ trades }: TradeLogProps) {
                   {trade.session}
                 </td>
                 <td className={`py-1.5 pr-4 ${getSignalColor(trade.signal)}`}>
-                  {trade.signal === "SKIP" ? "SKIP" : trade.signal}
+                  {trade.signal}
                 </td>
                 <td className="py-1.5 pr-4 text-right text-muted">
-                  {trade.units && trade.entry && trade.sl
-                    ? `£${Math.abs(trade.units * (trade.entry - trade.sl)).toFixed(0)}`
-                    : "-"}
+                  {getRiskGBP(trade, tradeIndex)}
                 </td>
                 <td className="py-1.5 pr-4 text-right">
                   {trade.entry?.toFixed(5) || "-"}
@@ -88,12 +120,8 @@ export function TradeLog({ trades }: TradeLogProps) {
                 <td
                   className={`py-1.5 pr-4 text-right ${getExitColor(trade.exit_reason)}`}
                   title={trade.skip_reason || undefined}
-                >
-                  {trade.exit_reason === "SKIP" && trade.skip_reason ? (
-                    <span className="text-warn">{trade.skip_reason}</span>
-                  ) : (
-                    trade.exit_reason
-                  )}
+                  >
+                  {trade.exit_reason}
                 </td>
                 <td className="py-1.5 pr-4 text-right">
                   <span
@@ -109,16 +137,22 @@ export function TradeLog({ trades }: TradeLogProps) {
                   </span>
                 </td>
                 <td
-                  className={`py-1.5 text-right ${getPnlColor(trade.pnl_pct)}`}
-                >
+                  className={`py-1.5 pr-4 text-right ${getPnlColor(trade.pnl_pct)}`}
+                   >
                   {trade.pnl_pct > 0 ? "+" : ""}
                   {trade.pnl_pct.toFixed(2)}%
                 </td>
+                <td
+                  className={`py-1.5 pr-4 text-right ${getPnlColor(trade.pnl_pct)}`}
+                   >
+                  {getPnlGBP(trade, tradeIndex)}
+                </td>
               </tr>
-            ))}
-            {sortedTrades.length === 0 && (
+            );
+            })}
+            {filledTrades.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center text-muted py-8">
+                <td colSpan={11} className="text-center text-muted py-8">
                   No trades yet
                 </td>
               </tr>
