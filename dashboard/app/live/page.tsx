@@ -240,6 +240,8 @@ function SignalsTable({ signals, session }: { signals: LiveSignalResult[]; sessi
 export default function LivePage() {
   const { state, error } = useLive();
 
+  const currentSession = state?.session?.name;
+
   const historicalTrades = (state?.historicalTrades || []).map((t: HistoricalTrade) => ({
     date: t.exit_time || t.entry_time,
     pair: t.pair.replace("_", ""),
@@ -256,6 +258,29 @@ export default function LivePage() {
     spread_pips: 0,
     filled: true,
   }));
+
+  const skippedSignals = (state?.signals || [])
+    .filter(s => s.signal === "SKIP" && s.session === currentSession)
+    .map((s) => ({
+      date: s.checked_at,
+      pair: s.pair,
+      session: s.session,
+      signal: "SKIP",
+      skip_reason: s.reason,
+      entry: null,
+      sl: null,
+      tp: null,
+      exit_price: null,
+      exit_reason: "SKIP",
+      pips: 0,
+      pnl_pct: 0,
+      spread_pips: 0,
+      filled: false,
+    }));
+
+  const allTradeEvents = [...historicalTrades, ...skippedSignals].sort((a, b) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 
   if (error) {
     return (
@@ -345,10 +370,7 @@ export default function LivePage() {
 
         <OrdersTable orders={state.orders} />
         <TradesTable trades={state.trades} />
-        <SignalsTable signals={state?.signals || []} session={state?.session?.name} />
-        {historicalTrades.length > 0 && (
-          <TradeLog trades={historicalTrades} />
-        )}
+        <TradeLog trades={allTradeEvents} />
       </div>
     </div>
   );
