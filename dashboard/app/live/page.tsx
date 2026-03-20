@@ -23,7 +23,8 @@ function formatPip(price: number, pair: string): string {
   return price.toFixed(decimals);
 }
 
-function formatMoney(value: number, currency: string): string {
+function formatMoney(value: number | undefined | null, currency: string): string {
+  if (value == null) return "—";
   const sign = value >= 0 ? "+" : "";
   return `${sign}£${value.toFixed(2)}`;
 }
@@ -246,11 +247,11 @@ export default function LivePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <StatCard
             label="Balance"
-            value={acc ? `${acc.currency === "GBP" ? "£" : "$"}${acc.balance.toFixed(0)}` : "—"}
+            value={acc?.balance != null ? `${acc.currency === "GBP" ? "£" : "$"}${acc.balance.toFixed(0)}` : "—"}
           />
           <StatCard
             label="Equity"
-            value={acc ? `${acc.currency === "GBP" ? "£" : "$"}${acc.equity.toFixed(0)}` : "—"}
+            value={acc?.equity != null ? `${acc.currency === "GBP" ? "£" : "$"}${acc.equity.toFixed(0)}` : "—"}
           />
           <StatCard
             label="Unrealized P&L"

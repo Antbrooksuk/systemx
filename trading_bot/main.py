@@ -134,6 +134,7 @@ def status():
         account_info = {
             "balance": account.balance,
             "equity": account.equity,
+            "unrealized_pl": account.unrealized_pl,
             "currency": account.currency,
         }
     except Exception:
