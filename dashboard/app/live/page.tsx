@@ -188,7 +188,7 @@ function TradesTable({ trades }: { trades: LiveTrade[] }) {
               <td className="py-2 pr-3 text-right">{formatPip(t.price, t.pair)}</td>
               <td className="py-2 pr-3 text-right">{formatPip(t.current_price, t.pair)}</td>
               <td className={`py-2 text-right ${(t.unrealized_pl ?? 0) >= 0 ? "text-profit" : "text-loss"}`}>
-                {((t.unrealized_pl ?? 0) >= 0 ? "+" : ""}{(t.unrealized_pl ?? 0).toFixed(2)}
+                {(t.unrealized_pl ?? 0) >= 0 ? "+" : ""}{(t.unrealized_pl ?? 0).toFixed(2)}
               </td>
             </tr>
           ))}
