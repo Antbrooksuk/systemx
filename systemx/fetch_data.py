@@ -46,7 +46,7 @@ def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime,
         if price.get("complete", False) or len(batch) < CANDLES_PER_REQUEST:
             break
 
-        last_time = datetime.fromisoformat(batch[-1]["time"].replace("Z", "+00:00"))
+        last_time = datetime.fromisoformat(batch[-1]["time"].replace("Z", ""))
         if last_time <= from_dt:
             break
         current_to = last_time
@@ -92,6 +92,8 @@ def main():
     client = OANDAClient()
     to_dt = datetime.utcnow()
     from_dt = to_dt - timedelta(days=args.years * 365 + 30)
+    from_dt = from_dt.replace(tzinfo=None)
+    to_dt = to_dt.replace(tzinfo=None)
 
     print(f"Fetching {args.years} years of M5 data from {from_dt.date()} to {to_dt.date()}")
     print(f"Pairs: {', '.join(args.pairs)}")
