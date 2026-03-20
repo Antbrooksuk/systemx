@@ -22,16 +22,15 @@ CANDLES_PER_REQUEST = 5000
 
 def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime, to_dt: datetime) -> list[dict]:
     candles = []
-    current = from_dt
+    current_to = to_dt
 
-    while current < to_dt:
+    while True:
         price = client._get(
             f"/v3/instruments/{instrument}/candles",
             params={
-                "from": current.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "to": to_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "from": from_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "to": current_to.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "granularity": "M5",
-                "count": CANDLES_PER_REQUEST,
             },
         )
 
@@ -41,8 +40,11 @@ def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime,
 
         candles.extend(batch)
 
+        if price.get("complete", False):
+            break
+
         last_time = datetime.fromisoformat(batch[-1]["time"].replace("Z", "+00:00"))
-        current = last_time + timedelta(minutes=5)
+        current_to = last_time
 
         if len(batch) < CANDLES_PER_REQUEST:
             break
@@ -79,6 +81,7 @@ def main():
     parser.add_argument("--years", type=int, default=DEFAULT_YEARS, help=f"Years of data to fetch (default: {DEFAULT_YEARS})")
     parser.add_argument("--pairs", nargs="+", default=["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], help="Pairs to fetch")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be fetched without fetching")
+    parser.add_argument("--refresh", action="store_true", help="Delete existing files before fetching")
     args = parser.parse_args()
 
     DATA_DIR.mkdir(exist_ok=True)
@@ -97,10 +100,15 @@ def main():
 
         existing = 0
         if output_path.exists():
-            import pandas as pd
-            df = pd.read_parquet(output_path)
-            existing = len(df)
-            print(f"  {pair}: {existing} candles already cached ({df.index[0].date()} to {df.index[-1].date()})")
+            if not args.refresh:
+                import pandas as pd
+                df = pd.read_parquet(output_path)
+                existing = len(df)
+                print(f"  {pair}: {existing} candles already cached ({df.index[0].date()} to {df.index[-1].date()}) — skipped (use --refresh to re-fetch)")
+                continue
+            else:
+                output_path.unlink()
+                print(f"  {pair}: deleted existing file, re-fetching...")
 
         if args.dry_run:
             print(f"  Would fetch: {from_dt.date()} → {to_dt.date()} (~{(args.years * 365 * 288) // 1000}K candles)")
@@ -111,8 +119,6 @@ def main():
 
         if candles:
             save_parquet(candles, output_path)
-            if existing:
-                print(f"  (added {len(candles)} new candles)")
         else:
             print(f"  No candles returned for {pair}")
 
