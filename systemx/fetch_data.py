@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "trading_bot"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from trading_bot.oanda import OANDAClient
 
 DATA_DIR = Path(__file__).parent / "data"
