@@ -211,3 +211,13 @@ class OANDAClient:
             params={"count": count},
         )
         return data.get("trades", [])
+
+    def get_transaction(self, transaction_id: int) -> dict:
+        return self._get(f"/v3/accounts/{self.account_id}/transactions/{transaction_id}")
+
+    def get_transactions_since(self, transaction_id: int) -> list[dict]:
+        data = self._get(
+            f"/v3/accounts/{self.account_id}/transactions",
+            params={"from": transaction_id, "type": "ORDER_CANCEL"},
+        )
+        return data.get("transactions", [])

@@ -161,7 +161,7 @@ class OrderManager:
                 trade_id = str(trade.get("id"))
                 oanda_pair = trade.get("instrument", "")
                 pair = OANDA.from_oanda_symbol(oanda_pair)
-                pl = float(trade.get("pl", 0))
+                pl = float(trade.get("realizedPL", 0))
                 units = int(trade.get("units", 0))
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
@@ -179,6 +179,12 @@ class OrderManager:
                     None,
                 )
                 if existing:
+                    if close_time:
+                        existing.exit_time = datetime.fromisoformat(close_time.replace("Z", "+00:00")) if close_time else None
+                        existing.exit_price = exit_price
+                        existing.exit_reason = "TP" if pl > 0 else ("SL" if pl < 0 else "CLOSED")
+                        existing.pips = round(pips, 1)
+                        existing.pnl_pct = round(pl / 1000 * 100, 4)
                     continue
 
                 if close_time:
