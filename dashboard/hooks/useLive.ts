@@ -38,6 +38,22 @@ export interface LiveTrade {
   oanda_trade_id?: string;
 }
 
+export interface HistoricalTrade {
+  pair: string;
+  session: string;
+  direction: string;
+  entry_time: string;
+  entry: number;
+  sl: number;
+  tp: number;
+  exit_time: string | null;
+  exit_price: number | null;
+  exit_reason: string;
+  pips: number;
+  pnl_pct: number;
+  oanda_trade_id: string;
+}
+
 export interface LiveState {
   session: {
     name: string;
@@ -58,6 +74,7 @@ export interface LiveState {
   current_signal: LiveSignal | null;
   orders: LiveOrder[];
   trades: LiveTrade[];
+  historicalTrades: HistoricalTrade[];
 }
 
 export function useLive() {
@@ -66,22 +83,25 @@ export function useLive() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [statusRes, ordersRes, tradesRes] = await Promise.all([
+      const [statusRes, ordersRes, tradesRes, histRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/status`),
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/orders`),
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/live-trades`),
+        fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/trades`),
       ]);
 
-      const [status, ordersData, tradesData] = await Promise.all([
+      const [status, ordersData, tradesData, histData] = await Promise.all([
         statusRes.json(),
         ordersRes.json(),
         tradesRes.json(),
+        histRes.json(),
       ]);
 
       setState({
         ...status,
         orders: ordersData.orders || [],
         trades: tradesData.trades || [],
+        historicalTrades: histData.trades || [],
       });
       setError(null);
     } catch (e: any) {

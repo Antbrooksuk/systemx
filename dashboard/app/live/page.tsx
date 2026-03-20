@@ -1,7 +1,8 @@
 "use client";
 
-import { useLive, LiveOrder, LiveTrade } from "../../hooks/useLive";
+import { useLive, LiveOrder, LiveTrade, HistoricalTrade } from "../../hooks/useLive";
 import { StatCard } from "../../components/StatCard";
+import { TradeLog } from "../../components/TradeLog";
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -201,6 +202,23 @@ function TradesTable({ trades }: { trades: LiveTrade[] }) {
 export default function LivePage() {
   const { state, error } = useLive();
 
+  const historicalTrades = (state?.historicalTrades || []).map((t: HistoricalTrade) => ({
+    date: t.exit_time || t.entry_time,
+    pair: t.pair.replace("_", ""),
+    session: t.session,
+    signal: t.direction,
+    skip_reason: null,
+    entry: t.entry,
+    sl: t.sl,
+    tp: t.tp,
+    exit_price: t.exit_price,
+    exit_reason: t.exit_reason,
+    pips: t.pips,
+    pnl_pct: t.pnl_pct,
+    spread_pips: 0,
+    filled: true,
+  }));
+
   if (error) {
     return (
       <div className="min-h-screen p-4 md:p-6">
@@ -289,6 +307,9 @@ export default function LivePage() {
 
         <OrdersTable orders={state.orders} />
         <TradesTable trades={state.trades} />
+        {historicalTrades.length > 0 && (
+          <TradeLog trades={historicalTrades} />
+        )}
       </div>
     </div>
   );
