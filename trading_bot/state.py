@@ -67,6 +67,7 @@ class BotState:
     current_signal: Optional[dict] = None
     total_pnl_pct: float = 0.0
     signal_results: list[SignalResult] = field(default_factory=list)
+    checked_pairs: set[str] = field(default_factory=set)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def add_order(self, order: ActiveOrder):
@@ -83,7 +84,11 @@ class BotState:
             self.total_pnl_pct += trade.pnl_pct
 
     def add_signal_result(self, result: SignalResult):
+        key = f"{result.session}:{result.pair}"
         with self.lock:
+            if key in self.checked_pairs:
+                return
+            self.checked_pairs.add(key)
             self.signal_results.append(result)
             if len(self.signal_results) > 100:
                 self.signal_results = self.signal_results[-100:]

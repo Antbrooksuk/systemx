@@ -53,6 +53,9 @@ def poll_loop():
 
 def check_session_signals(session):
     from trading_bot.state import SignalResult
+    if getattr(state, "_last_checked_session", None) != session.name:
+        state.checked_pairs = set()
+        state._last_checked_session = session.name
     for pair in session.pairs:
         try:
             df = client.get_candles_df(pair, count=50)
