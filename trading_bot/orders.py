@@ -3,7 +3,7 @@ from datetime import datetime
 from trading_bot.oanda import OANDAClient, OANDAClient as OANDA
 from trading_bot.state import state, ActiveOrder, FilledTrade
 from trading_bot.log_config import log
-from mode_b import PAIR_CONFIG
+from mode_b import PAIR_CONFIG, RISK_PER_TRADE
 
 
 MAX_CANDLES = 4
@@ -25,7 +25,18 @@ class OrderManager:
         pip_value = PAIR_CONFIG[pair]["pip_value"]
         pip_str = "%.5f" if pip_value < 0.001 else "%.3f"
 
-        units = -1 if direction == "SHORT" else 1
+        sl_distance_pips = abs(entry_price - sl_price) / pip_value
+        try:
+            acc = self.client.get_account()
+            balance = acc.balance
+        except Exception:
+            balance = 2000.0
+        risk_amount = balance * RISK_PER_TRADE
+        units = int(risk_amount / (sl_distance_pips * pip_value))
+
+        if units == 0:
+            log.warning(f"Balance too small for 1% risk on {pair}: £{balance}, SL distance {sl_distance_pips:.1f} pips")
+            return None
 
         log.info(
             f"PLACING LIMIT {direction} {pair}: "
