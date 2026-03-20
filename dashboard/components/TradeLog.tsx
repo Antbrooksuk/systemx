@@ -64,7 +64,7 @@ export function TradeLog({ trades }: TradeLogProps) {
                 key={idx}
                 className={`border-t border-border ${trade.exit_reason === "LIMIT" ? "opacity-50" : ""}`}
               >
-                <td className="py-1.5 pr-4 text-muted">{trades.length - idx}</td>
+                <td className="py-1.5 pr-4 text-muted">{idx + 1}</td>
                 <td className="py-1.5 pr-4 text-muted">{formatDate(trade.date)}</td>
                 <td className="py-1.5 pr-4 text-fg">{trade.pair}</td>
                 <td className="py-1.5 pr-4 text-muted capitalize">{trade.session}</td>

@@ -181,7 +181,7 @@ class OrderManager:
                 units = int(trade.get("initialUnits", 0))
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
-                exit_price = float(trade.get("closeoutPrice", 0))
+                exit_price = float(trade.get("averageClosePrice", 0))
                 sl_price = float(trade.get("stopLossOrder", {}).get("price", 0))
                 tp_price = float(trade.get("takeProfitOrder", {}).get("price", 0))
                 close_time = trade.get("closeTime", "")

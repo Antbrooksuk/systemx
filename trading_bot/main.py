@@ -163,14 +163,17 @@ def status():
             "unrealized_pl": account.unrealized_pl,
             "currency": account.currency,
         }
+        STARTING_BALANCE = 2000.0
+        total_pnl_pct = round((account.balance - STARTING_BALANCE) / STARTING_BALANCE * 100, 2)
     except Exception:
         account_info = None
+        total_pnl_pct = 0.0
 
     return {
         "session": session_info,
         "active_orders": len(state.active_orders),
         "filled_trades": len(state.filled_trades),
-        "total_pnl_pct": round(state.total_pnl_pct, 2),
+        "total_pnl_pct": total_pnl_pct,
         "uptime_seconds": int((datetime.utcnow() - state.started_at).total_seconds()),
         "account": account_info,
         "current_signal": state.current_signal,
