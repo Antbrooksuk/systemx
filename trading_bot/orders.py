@@ -82,7 +82,7 @@ class OrderManager:
             log.error(f"Failed to place order: {e}")
             return None
 
-    def check_and_manage_orders(self) -> list[FilledTrade]:
+    def check_and_manage_orders(self, session: str = "live") -> list[FilledTrade]:
         completed = []
         try:
             open_trades = self.client.get_open_trades()
@@ -135,7 +135,7 @@ class OrderManager:
 
                 filled = FilledTrade(
                     pair=pair,
-                    session="live",
+                    session=session,
                     direction=direction,
                     units=abs(units),
                     entry_time=datetime.fromisoformat(open_time.replace("Z", "+00:00")),
@@ -168,7 +168,7 @@ class OrderManager:
 
         return completed
 
-    def check_closed_trades(self) -> list[FilledTrade]:
+    def check_closed_trades(self, session: str = "live") -> list[FilledTrade]:
         recent_closed: list[FilledTrade] = []
         try:
             history = self.client.get_trade_history(count=50)
@@ -221,7 +221,7 @@ class OrderManager:
 
                     filled = FilledTrade(
                         pair=pair,
-                        session="live",
+                        session=session,
                         direction=direction,
                         units=abs(units),
                         entry_time=datetime.fromisoformat(open_time.replace("Z", "+00:00")) if open_time else datetime.utcnow(),

@@ -38,10 +38,11 @@ poll_thread: threading.Thread | None = None
 def poll_loop():
     while running:
         try:
-            order_manager.check_and_manage_orders()
-            order_manager.check_closed_trades()
-
             current_session = get_current_session()
+            session_name = current_session.name if current_session else "live"
+            order_manager.check_and_manage_orders(session=session_name)
+            order_manager.check_closed_trades(session=session_name)
+
             if current_session:
                 check_session_signals(current_session)
 
