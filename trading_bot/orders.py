@@ -123,24 +123,56 @@ class OrderManager:
                 open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00")) if open_time_str else datetime.utcnow()
                 candles_open = (datetime.utcnow() - open_time_dt).total_seconds() / 300
 
-                if candles_open >= MAX_CANDLES:
-                    try:
-                        self.client.close_trade(trade_id)
-                        log.info(
-                            f"TIME STOP: closing trade {trade_id} {pair} "
-                            f"({candles_open:.1f} candles open)"
-                        )
-                        continue
-                    except Exception as e:
-                        log.error(f"Failed to time stop trade {trade_id}: {e}")
+                pip_value = PAIR_CONFIG[pair]["pip_value"]
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
                 sl_price = float(trade.get("stopLossOrder", {}).get("price", 0))
                 tp_price = float(trade.get("takeProfitOrder", {}).get("price", 0))
                 unrealized_pl = float(trade.get("unrealizedPL", 0))
-                open_time = trade.get("openTime", "")
 
-                pip_value = PAIR_CONFIG[OANDA.from_oanda_symbol(pair)]["pip_value"]
+                if candles_open >= MAX_CANDLES:
+                    try:
+                        self.client.close_trade(trade_id)
+                        current_price = float(trade.get("price", 0))
+                        sl_dist_pips = abs(entry_price - sl_price) / pip_value
+                        pnl_at_close = unrealized_pl
+                        pips_closed = round(sl_dist_pips, 1) * (-1 if direction == "SHORT" else 1)
+                        try:
+                            acc2 = self.client.get_account()
+                            balance2 = acc2.balance
+                        except Exception:
+                            balance2 = 100000.0
+                        pnl_pct_closed = round(pnl_at_close / balance2 * 100, 4)
+                        filled_ts = FilledTrade(
+                            pair=pair,
+                            session=session,
+                            direction=direction,
+                            units=abs(units),
+                            entry_time=open_time_dt,
+                            entry_price=entry_price,
+                            sl_price=sl_price,
+                            tp_price=tp_price,
+                            exit_time=datetime.utcnow(),
+                            exit_price=current_price,
+                            exit_reason="TIME_STOP",
+                            pips=pips_closed,
+                            pnl_pct=pnl_pct_closed,
+                            oanda_trade_id=trade_id,
+                            completed_at=datetime.utcnow(),
+                        )
+                        existing = next(
+                            (t for t in state.filled_trades if t.oanda_trade_id == trade_id),
+                            None,
+                        )
+                        if not existing:
+                            state.add_trade(filled_ts)
+                            log.info(
+                                f"TIME STOP: closed trade {trade_id} {pair} "
+                                f"pl={pnl_at_close:.2f} pips={pips_closed:.1f}"
+                            )
+                        continue
+                    except Exception as e:
+                        log.error(f"Failed to time stop trade {trade_id}: {e}")
                 try:
                     acc = self.client.get_account()
                     balance = acc.balance
@@ -153,7 +185,7 @@ class OrderManager:
                     session=session,
                     direction=direction,
                     units=abs(units),
-                    entry_time=datetime.fromisoformat(open_time.replace("Z", "+00:00")),
+                    entry_time=open_time_dt,
                     entry_price=entry_price,
                     sl_price=sl_price,
                     tp_price=tp_price,
