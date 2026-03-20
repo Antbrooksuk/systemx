@@ -330,11 +330,11 @@ export default function LivePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <StatCard
             label="Balance"
-            value={acc?.balance != null ? `${acc.currency === "GBP" ? "£" : "$"}${acc.balance.toFixed(0)}` : "—"}
+            value={acc?.balance != null ? `${acc.currency === "GBP" ? "£" : "$"}${acc.balance.toFixed(4)}` : "—"}
           />
           <StatCard
             label="Equity"
-            value={acc?.equity != null ? `${acc.currency === "GBP" ? "£" : "$"}${acc.equity.toFixed(0)}` : "—"}
+            value={acc?.equity != null ? `${acc.currency === "GBP" ? "£" : "$"}${acc.equity.toFixed(4)}` : "—"}
           />
           <StatCard
             label="Unrealized P&L"
