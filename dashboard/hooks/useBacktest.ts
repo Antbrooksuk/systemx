@@ -16,8 +16,9 @@ export interface Strategy {
 
 const RISK_OPTIONS = [0.005, 0.01, 0.015, 0.02];
 const CAPITAL_OPTIONS = [1000, 2000, 3000, 5000, 10000];
+const YEAR_OPTIONS = [0, 1, 2, 3];
 
-export { RISK_OPTIONS, CAPITAL_OPTIONS };
+export { RISK_OPTIONS, CAPITAL_OPTIONS, YEAR_OPTIONS };
 
 const initialState: State = {
   starting_capital: 2000,
@@ -38,6 +39,7 @@ export function useBacktest() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>("base");
   const [selectedCapital, setSelectedCapital] = useState<number>(2000);
   const [selectedRisk, setSelectedRisk] = useState<number>(0.01);
+  const [selectedYears, setSelectedYears] = useState<number>(0);
   const [strategies, setStrategies] = useState<Strategy[]>([
     {
       key: "base",
@@ -91,6 +93,7 @@ export function useBacktest() {
     try {
       const result = await runBacktest(
         0,
+        selectedYears,
         selectedStrategy,
         selectedCapital,
         selectedRisk,
@@ -148,6 +151,7 @@ export function useBacktest() {
           setState((prev) => ({ ...prev, running: false }));
         }
       },
+      selectedYears,
       selectedStrategy,
       0,
       selectedCapital,
@@ -171,6 +175,8 @@ export function useBacktest() {
     setSelectedCapital,
     selectedRisk,
     setSelectedRisk,
+    selectedYears,
+    setSelectedYears,
     fetchStrategies,
     fetchStatus,
     reset,

@@ -47,10 +47,11 @@ def list_strategies():
 
 
 @app.get("/backtest")
-def backtest(period_days: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01):
+def backtest(period_days: int = 0, years: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01):
     if strategy not in STRATEGY_PRESETS:
         return {"error": f"Unknown strategy: {strategy}. Available: {list(STRATEGY_PRESETS.keys())}"}
-    result = run_backtest(period_days, strategy, starting_capital, risk_pct)
+    days = years * 365 if years > 0 else period_days
+    result = run_backtest(days, strategy, starting_capital, risk_pct)
     return result
 
 
@@ -61,6 +62,7 @@ async def backtest_stream(websocket: WebSocket):
     try:
         msg = await websocket.receive_json()
         period_days = msg.get("period_days", 0)
+        years = msg.get("years", 0)
         strategy = msg.get("strategy", "base")
         starting_capital = msg.get("starting_capital", 2000.0)
         risk_pct = msg.get("risk_pct", 0.01)
@@ -76,7 +78,8 @@ async def backtest_stream(websocket: WebSocket):
             "strategy_label": STRATEGY_PRESETS[strategy]["label"],
         })
         
-        result = run_backtest(period_days, strategy, starting_capital, risk_pct)
+        days = years * 365 if years > 0 else period_days
+        result = run_backtest(days, strategy, starting_capital, risk_pct)
         
         for i, trade in enumerate(result["trades"]):
             trade_data = {
