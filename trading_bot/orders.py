@@ -34,13 +34,17 @@ class OrderManager:
         risk_amount = balance * RISK_PER_TRADE
         units = int(risk_amount / (sl_distance_pips * pip_value))
 
+        MARGIN_RATE = 0.025
+        max_units_by_margin = int(balance / (entry_price * pip_value * MARGIN_RATE)) if pip_value > 0 else 0
+        units = min(units, max_units_by_margin)
+
         if units == 0:
             log.warning(f"Balance too small for 1% risk on {pair}: £{balance}, SL distance {sl_distance_pips:.1f} pips")
             return None
 
         log.info(
             f"PLACING LIMIT {direction} {pair}: "
-            f"entry={pip_str % entry_price} sl={pip_str % sl_price} tp={pip_str % tp_price}"
+            f"entry={pip_str % entry_price} sl={pip_str % sl_price} tp={pip_str % tp_price} units={units}"
         )
 
         try:
