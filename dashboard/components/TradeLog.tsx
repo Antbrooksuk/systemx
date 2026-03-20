@@ -4,7 +4,7 @@ import { Trade } from "../lib/types";
 
 interface TradeLogProps {
   trades: Trade[];
-  equityCurve: { trade: number; equity: number }[];
+  equityCurve?: { trade: number; equity: number }[];
 }
 
 export function TradeLog({ trades, equityCurve }: TradeLogProps) {
@@ -18,8 +18,10 @@ export function TradeLog({ trades, equityCurve }: TradeLogProps) {
 
   // Build capital before map from filled trades (indices 0 to filledTrades.length-1)
   const capitalBeforeTrade: Record<number, number> = {};
-  for (let i = 0; i < equityCurve.length && i < filledTrades.length; i++) {
-    capitalBeforeTrade[i + 1] = equityCurve[i]?.equity || 2000;
+  if (equityCurve) {
+    for (let i = 0; i < equityCurve.length && i < filledTrades.length; i++) {
+      capitalBeforeTrade[i + 1] = equityCurve[i]?.equity || 2000;
+    }
   }
 
   const getRiskGBP = (trade: Trade, tradeIndex: number): string => {
