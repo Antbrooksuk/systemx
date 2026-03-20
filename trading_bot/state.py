@@ -1,9 +1,13 @@
 """In-memory trade state and REST API models."""
+import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 from enum import Enum
 import threading
+
+TRADES_FILE = os.path.join(os.path.dirname(__file__), "trades.json")
 
 
 class OrderStatus(Enum):
@@ -71,6 +75,44 @@ class BotState:
     checked_pairs: set[str] = field(default_factory=set)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
+    def load_from_file(self):
+        if os.path.exists(TRADES_FILE):
+            try:
+                with open(TRADES_FILE, 'r') as f:
+                    data = json.load(f)
+                    trades_data = data.get('trades', [])
+                    for t in trades_data:
+                        self.filled_trades.append(FilledTrade(**t))
+                    self.total_pnl_pct = data.get('total_pnl_pct', 0.0)
+            except Exception as e:
+                print(f"Failed to load trades from file: {e}")
+
+    def save_to_file(self):
+        try:
+            trades_data = [
+                {
+                    "pair": t.pair,
+                    "session": t.session,
+                    "direction": t.direction,
+                    "units": t.units,
+                    "entry_time": t.entry_time.isoformat() if t.entry_time else None,
+                    "entry_price": t.entry_price,
+                    "sl_price": t.sl_price,
+                    "tp_price": t.tp_price,
+                    "exit_time": t.exit_time.isoformat() if t.exit_time else None,
+                    "exit_price": t.exit_price,
+                    "exit_reason": t.exit_reason,
+                    "pips": t.pips,
+                    "pnl_pct": t.pnl_pct,
+                    "oanda_trade_id": t.oanda_trade_id,
+                }
+                for t in self.filled_trades
+            ]
+            with open(TRADES_FILE, 'w') as f:
+                json.dump({"trades": trades_data, "total_pnl_pct": self.total_pnl_pct}, f, indent=2)
+        except Exception as e:
+            print(f"Failed to save trades to file: {e}")
+
     def add_order(self, order: ActiveOrder):
         with self.lock:
             self.active_orders[order.oanda_order_id] = order
@@ -83,6 +125,7 @@ class BotState:
         with self.lock:
             self.filled_trades.append(trade)
             self.total_pnl_pct += trade.pnl_pct
+            self.save_to_file()
 
     def add_signal_result(self, result: SignalResult):
         key = f"{result.session}:{result.pair}"
@@ -168,3 +211,4 @@ class BotState:
 
 
 state = BotState()
+state.load_from_file()
