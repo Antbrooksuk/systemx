@@ -4,7 +4,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "systemx"))
 
-from mode_b import analyse_setup, calculate_entry, Signal
+from mode_b import analyse_setup, calculate_entry, set_strategy, Signal
+
+set_strategy("base")
 
 
 def run_signal(pd_candles_df, session_candles_df, pair: str) -> dict:
