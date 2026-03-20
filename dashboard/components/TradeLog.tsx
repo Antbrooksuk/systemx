@@ -41,7 +41,9 @@ export function TradeLog({ trades }: TradeLogProps) {
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 h-[500px] overflow-hidden flex flex-col">
-      <div className="text-muted text-xs uppercase tracking-wider mb-2">Trade Log ({trades.length} trades)</div>
+      <div className="text-muted text-xs uppercase tracking-wider mb-2">
+        Trade Log ({trades.length} trades)
+      </div>
       <div className="flex-1 overflow-y-auto">
         <table className="w-full text-xs font-mono">
           <thead className="sticky top-0 bg-card border-b border-border z-10">
@@ -51,7 +53,7 @@ export function TradeLog({ trades }: TradeLogProps) {
               <th className="text-left pb-2 pr-4">Pair</th>
               <th className="text-left pb-2 pr-4">Session</th>
               <th className="text-left pb-2 pr-4">Signal</th>
-              <th className="text-right pb-2 pr-4">Units</th>
+              <th className="text-right pb-2 pr-4">Risk (£)</th>
               <th className="text-right pb-2 pr-4">Entry</th>
               <th className="text-right pb-2 pr-4">Exit</th>
               <th className="text-right pb-2 pr-4">Pips</th>
@@ -65,15 +67,28 @@ export function TradeLog({ trades }: TradeLogProps) {
                 className={`border-t border-border ${trade.exit_reason === "LIMIT" ? "opacity-50" : ""}`}
               >
                 <td className="py-1.5 pr-4 text-muted">{idx + 1}</td>
-                <td className="py-1.5 pr-4 text-muted">{formatDate(trade.date)}</td>
+                <td className="py-1.5 pr-4 text-muted">
+                  {formatDate(trade.date)}
+                </td>
                 <td className="py-1.5 pr-4 text-fg">{trade.pair}</td>
-                <td className="py-1.5 pr-4 text-muted capitalize">{trade.session}</td>
+                <td className="py-1.5 pr-4 text-muted capitalize">
+                  {trade.session}
+                </td>
                 <td className={`py-1.5 pr-4 ${getSignalColor(trade.signal)}`}>
                   {trade.signal === "SKIP" ? "SKIP" : trade.signal}
                 </td>
-                <td className="py-1.5 pr-4 text-right text-muted">{trade.units && trade.entry && trade.sl ? `£${Math.abs(trade.units * (trade.entry - trade.sl)).toFixed(0)}` : "-"}</td>
-                <td className="py-1.5 pr-4 text-right">{trade.entry?.toFixed(5) || "-"}</td>
-                <td className={`py-1.5 pr-4 text-right ${getExitColor(trade.exit_reason)}`} title={trade.skip_reason || undefined}>
+                <td className="py-1.5 pr-4 text-right text-muted">
+                  {trade.units && trade.entry && trade.sl
+                    ? `£${Math.abs(trade.units * (trade.entry - trade.sl)).toFixed(0)}`
+                    : "-"}
+                </td>
+                <td className="py-1.5 pr-4 text-right">
+                  {trade.entry?.toFixed(5) || "-"}
+                </td>
+                <td
+                  className={`py-1.5 pr-4 text-right ${getExitColor(trade.exit_reason)}`}
+                  title={trade.skip_reason || undefined}
+                >
                   {trade.exit_reason === "SKIP" && trade.skip_reason ? (
                     <span className="text-warn">{trade.skip_reason}</span>
                   ) : (
@@ -81,11 +96,21 @@ export function TradeLog({ trades }: TradeLogProps) {
                   )}
                 </td>
                 <td className="py-1.5 pr-4 text-right">
-                  <span className={trade.pips > 0 ? "text-profit" : trade.pips < 0 ? "text-loss" : ""}>
+                  <span
+                    className={
+                      trade.pips > 0
+                        ? "text-profit"
+                        : trade.pips < 0
+                          ? "text-loss"
+                          : ""
+                    }
+                  >
                     {trade.pips?.toFixed(1) || "0"}
                   </span>
                 </td>
-                <td className={`py-1.5 text-right ${getPnlColor(trade.pnl_pct)}`}>
+                <td
+                  className={`py-1.5 text-right ${getPnlColor(trade.pnl_pct)}`}
+                >
                   {trade.pnl_pct > 0 ? "+" : ""}
                   {trade.pnl_pct.toFixed(2)}%
                 </td>

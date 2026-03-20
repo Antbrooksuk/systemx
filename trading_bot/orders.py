@@ -145,7 +145,7 @@ class OrderManager:
                     exit_time=None,
                     exit_price=None,
                     exit_reason="OPEN",
-                    pips=round(unrealized_pl / pip_value / 10, 1),
+                    pips=round(abs(unrealized_pl) / (abs(units) * pip_value), 1),
                     pnl_pct=round(pnl_pct, 4),
                     oanda_trade_id=trade_id,
                 )
@@ -188,7 +188,7 @@ class OrderManager:
                 open_time = trade.get("openTime", "")
 
                 pip_value = PAIR_CONFIG[OANDA.from_oanda_symbol(pair)]["pip_value"]
-                pips = pl / pip_value / 10
+                pips = round(abs(entry_price - exit_price) / pip_value, 1) if entry_price and exit_price else 0
 
                 try:
                     acc = self.client.get_account()
