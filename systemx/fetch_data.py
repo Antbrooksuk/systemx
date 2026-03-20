@@ -48,7 +48,7 @@ def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime,
             break
 
         oldest = datetime.fromisoformat(batch[0]["time"].replace("Z", ""))
-        to_dt = oldest
+        to_dt = oldest - timedelta(minutes=5)
 
         time.sleep(0.25)
 
@@ -73,7 +73,10 @@ def save_parquet(candles: list[dict], output_path: Path):
     df = df.sort_index()
     df = df[~df.index.duplicated(keep='first')]
     df.to_parquet(output_path)
-    print(f"  Saved {output_path.name}: {len(df)} candles, {df.index[0].date()} to {df.index[-1].date()}")
+    if len(df) > 0:
+        print(f"  Saved {output_path.name}: {len(df)} candles, {df.index[0].date()} to {df.index[-1].date()}")
+    else:
+        print(f"  Saved {output_path.name}: 0 candles — no data in range")
 
 
 def main():
