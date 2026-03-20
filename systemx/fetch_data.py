@@ -1,45 +1,120 @@
 """
-Download and cache 60 days of M5 forex data.
-Run once, or with --refresh to update.
+Download historical M5 forex data from OANDA.
+Run with --years N to fetch N years of data (default: 3).
+Ex: python fetch_data.py --years 3 --pairs EURUSD GBPUSD GBPUSD USDJPY EURJPY
 """
-import yfinance as yf
-import pandas as pd
+import os
+import sys
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
 
-PAIRS = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "EURJPY=X"]
+sys.path.insert(0, str(Path(__file__).parent.parent / "trading_bot"))
+from trading_bot.oanda import OANDAClient
+
 DATA_DIR = Path(__file__).parent / "data"
+DEFAULT_YEARS = 3
+CANDLES_PER_REQUEST = 5000
 
 
-def fetch_and_save(days=60):
+def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime, to_dt: datetime) -> list[dict]:
+    candles = []
+    current = from_dt
+
+    while current < to_dt:
+        price = client._get(
+            f"/v3/instruments/{instrument}/candles",
+            params={
+                "from": current.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "to": to_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "granularity": "M5",
+                "count": CANDLES_PER_REQUEST,
+            },
+        )
+
+        batch = price.get("candles", [])
+        if not batch:
+            break
+
+        candles.extend(batch)
+
+        last_time = datetime.fromisoformat(batch[-1]["time"].replace("Z", "+00:00"))
+        current = last_time + timedelta(minutes=5)
+
+        if len(batch) < CANDLES_PER_REQUEST:
+            break
+
+        time.sleep(0.25)
+
+    return candles
+
+
+def save_parquet(candles: list[dict], output_path: Path):
+    import pandas as pd
+
+    rows = []
+    for c in candles:
+        mid = c.get("mid", {})
+        rows.append({
+            "Open": float(mid["o"]),
+            "High": float(mid["h"]),
+            "Low": float(mid["l"]),
+            "Close": float(mid["c"]),
+            "Volume": int(c.get("volume", 0)),
+        })
+
+    df = pd.DataFrame(rows, index=pd.to_datetime([c["time"] for c in candles]).tz_localize("UTC"))
+    df = df.sort_index()
+    df.to_parquet(output_path)
+    print(f"  Saved {output_path.name}: {len(df)} candles, {df.index[0].date()} to {df.index[-1].date()}")
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Download OANDA M5 historical data")
+    parser.add_argument("--years", type=int, default=DEFAULT_YEARS, help=f"Years of data to fetch (default: {DEFAULT_YEARS})")
+    parser.add_argument("--pairs", nargs="+", default=["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], help="Pairs to fetch")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be fetched without fetching")
+    args = parser.parse_args()
+
     DATA_DIR.mkdir(exist_ok=True)
-    
-    for pair in PAIRS:
-        print(f"Fetching {pair}...")
-        ticker = yf.Ticker(pair)
-        df = ticker.history(period=f"{days}d", interval="5m")
-        
-        if df.empty:
-            print(f"  ERROR: No data for {pair}")
+
+    client = OANDAClient()
+    to_dt = datetime.utcnow()
+    from_dt = to_dt - timedelta(days=args.years * 365 + 30)
+
+    print(f"Fetching {args.years} years of M5 data from {from_dt.date()} to {to_dt.date()}")
+    print(f"Pairs: {', '.join(args.pairs)}")
+    print()
+
+    for pair in args.pairs:
+        oanda_symbol = OANDAClient.to_oanda_symbol(pair)
+        output_path = DATA_DIR / f"{pair}_oanda.parquet"
+
+        existing = 0
+        if output_path.exists():
+            import pandas as pd
+            df = pd.read_parquet(output_path)
+            existing = len(df)
+            print(f"  {pair}: {existing} candles already cached ({df.index[0].date()} to {df.index[-1].date()})")
+
+        if args.dry_run:
+            print(f"  Would fetch: {from_dt.date()} → {to_dt.date()} (~{(args.years * 365 * 288) // 1000}K candles)")
             continue
-        
-        df = df.tz_convert("UTC")
-        
-        filename = pair.replace("=X", "") + ".parquet"
-        df.to_parquet(DATA_DIR / filename)
-        print(f"  Saved {filename}: {len(df)} candles")
-        
+
+        print(f"Fetching {pair} ({oanda_symbol})...")
+        candles = fetch_oanda_candles(client, oanda_symbol, from_dt, to_dt)
+
+        if candles:
+            save_parquet(candles, output_path)
+            if existing:
+                print(f"  (added {len(candles)} new candles)")
+        else:
+            print(f"  No candles returned for {pair}")
+
         time.sleep(1)
 
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--refresh", action="store_true", help="Re-fetch data")
-    parser.add_argument("--days", type=int, default=60, help="Number of days")
-    args = parser.parse_args()
-    
-    if args.refresh or not (DATA_DIR / "EURUSD.parquet").exists():
-        fetch_and_save(args.days)
-    else:
-        print("Data already exists. Use --refresh to update.")
+    main()

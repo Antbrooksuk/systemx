@@ -33,11 +33,9 @@ def load_data() -> Dict[str, pd.DataFrame]:
     data = {}
     for pair in PAIRS:
         oanda_file = DATA_DIR / f"{pair}_oanda.parquet"
-        yf_file = DATA_DIR / f"{pair}.parquet"
-        file = oanda_file if oanda_file.exists() else yf_file
-        if not file.exists():
-            raise FileNotFoundError(f"Missing {file}. Run: python3 fetch_data.py first")
-        df = pd.read_parquet(file)
+        if not oanda_file.exists():
+            raise FileNotFoundError(f"Missing {oanda_file}. Download from OANDA first.")
+        df = pd.read_parquet(oanda_file)
         df.index = pd.to_datetime(df.index)
         df = df.sort_index()
         data[pair] = df
