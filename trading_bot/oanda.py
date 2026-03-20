@@ -50,12 +50,12 @@ class OANDAClient:
 
     @staticmethod
     def to_oanda_symbol(pair: str) -> str:
-        mapping = {"EURUSD": "EUR_USD", "GBPUSD": "GBP_USD", "USDJPY": "USD_JPY", "EURJPY": "EUR_JPY"}
+        mapping = {"EURUSD": "EUR_USD", "GBPUSD": "GBP_USD", "USDJPY": "USD_JPY"}
         return mapping.get(pair, pair.replace("USD", "_USD"))
 
     @staticmethod
     def from_oanda_symbol(oanda_symbol: str) -> str:
-        mapping = {"EUR_USD": "EURUSD", "GBP_USD": "GBPUSD", "USD_JPY": "USDJPY", "EUR_JPY": "EURJPY"}
+        mapping = {"EUR_USD": "EURUSD", "GBP_USD": "GBPUSD", "USD_JPY": "USDJPY"}
         return mapping.get(oanda_symbol, oanda_symbol.replace("_", ""))
 
     def _get(self, path: str, params: Optional[dict] = None) -> dict:

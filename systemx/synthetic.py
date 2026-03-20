@@ -17,7 +17,7 @@ OUTCOME_WEIGHTS = {
     "skip": 0.03,
 }
 
-PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
+PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"]
 SESSIONS = ["london", "ny"]
 RR_RANGE = (1.75, 2.0)
 

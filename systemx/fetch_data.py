@@ -7,7 +7,7 @@ import pandas as pd
 import time
 from pathlib import Path
 
-PAIRS = ["EURUSD=X", "GBPUSD=X", "USDJPY=X"]
+PAIRS = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "EURJPY=X"]
 DATA_DIR = Path(__file__).parent / "data"
 
 

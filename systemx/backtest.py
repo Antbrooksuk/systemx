@@ -20,7 +20,7 @@ DATA_DIR = Path(__file__).parent / "data"
 
 SESSION_PAIRS = {
     "london": ["EURUSD", "GBPUSD"],
-    "ny": ["EURUSD", "GBPUSD", "USDJPY"],
+    "ny": ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"],
 }
 
 SESSION_WINDOWS = {

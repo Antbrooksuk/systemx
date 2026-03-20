@@ -1,15 +1,17 @@
-PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
+PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"]
 
 PIP_SIZES = {
     "EURUSD": 0.0001,
     "GBPUSD": 0.0001,
-    "USDJPY": 0.01
+    "USDJPY": 0.01,
+    "EURJPY": 0.01,
 }
 
 ASIAN_RANGE_MAX_PIPS = {
     "EURUSD": 60,
     "GBPUSD": 80,
-    "USDJPY": 70
+    "USDJPY": 70,
+    "EURJPY": 100,
 }
 
 BREAKOUT_BODY_MIN_PCT = 0.60

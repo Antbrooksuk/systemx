@@ -14,7 +14,7 @@ class Session:
 
 SESSIONS = [
     Session("london", ["EURUSD", "GBPUSD"], time(8, 0), time(10, 0)),
-    Session("ny", ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], time(14, 30), time(16, 30)),
+    Session("ny", ["EURUSD", "GBPUSD", "USDJPY"], time(14, 30), time(16, 30)),
 ]
 
 
