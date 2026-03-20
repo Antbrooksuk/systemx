@@ -141,22 +141,6 @@ export default function Dashboard() {
             >
               {state.running ? "Running..." : "Run Backtest"}
             </button>
-
-            <button
-              onClick={runStream}
-              disabled={state.running}
-              className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-border disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-            >
-              {state.running ? "Streaming..." : "Stream"}
-            </button>
-
-            <button
-              onClick={reset}
-              disabled={state.running}
-              className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-border disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-muted"
-            >
-              Reset
-            </button>
           </div>
         </header>
 

@@ -161,6 +161,30 @@ def orders():
     return {"orders": state.get_orders()}
 
 
+@app.get("/live-trades")
+def live_trades():
+    try:
+        open_trades = client.get_open_trades()
+        return {
+            "trades": [
+                {
+                    "id": t.get("id"),
+                    "oanda_trade_id": t.get("id"),
+                    "pair": OANDAClient.from_oanda_symbol(t.get("instrument", "")),
+                    "direction": "SHORT" if int(t.get("currentUnits", 0)) < 0 else "LONG",
+                    "units": abs(int(t.get("currentUnits", 0))),
+                    "price": float(t.get("price", 0)),
+                    "current_price": float(t.get("price", 0)),
+                    "unrealized_pl": float(t.get("unrealizedPL", 0)),
+                    "open_time": t.get("openTime", ""),
+                }
+                for t in open_trades
+            ]
+        }
+    except Exception as e:
+        return {"trades": [], "error": str(e)}
+
+
 @app.get("/candles")
 def candles(pair: str = "EURUSD", count: int = 20):
     try:

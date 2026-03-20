@@ -35,6 +35,7 @@ export interface LiveTrade {
   current_price: number;
   unrealized_pl: number;
   open_time: string;
+  oanda_trade_id?: string;
 }
 
 export interface LiveState {
@@ -68,7 +69,7 @@ export function useLive() {
       const [statusRes, ordersRes, tradesRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/status`),
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/orders`),
-        fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/trades`),
+        fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/live-trades`),
       ]);
 
       const [status, ordersData, tradesData] = await Promise.all([

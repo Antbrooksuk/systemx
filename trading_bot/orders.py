@@ -100,7 +100,8 @@ class OrderManager:
 
             for trade in open_trades:
                 trade_id = str(trade.get("id"))
-                pair = trade.get("instrument")
+                oanda_pair = trade.get("instrument")
+                pair = OANDA.from_oanda_symbol(oanda_pair)
                 units = int(trade.get("currentUnits", 0))
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
@@ -158,7 +159,8 @@ class OrderManager:
 
             for trade in history:
                 trade_id = str(trade.get("id"))
-                pair = trade.get("instrument", "")
+                oanda_pair = trade.get("instrument", "")
+                pair = OANDA.from_oanda_symbol(oanda_pair)
                 pl = float(trade.get("pl", 0))
                 units = int(trade.get("units", 0))
                 direction = "SHORT" if units < 0 else "LONG"
