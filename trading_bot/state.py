@@ -45,6 +45,19 @@ class FilledTrade:
 
 
 @dataclass
+class SignalResult:
+    pair: str
+    session: str
+    signal: str
+    direction: Optional[str]
+    entry: Optional[float]
+    sl: Optional[float]
+    tp: Optional[float]
+    reason: Optional[str]
+    checked_at: datetime
+
+
+@dataclass
 class BotState:
     active_orders: dict[str, ActiveOrder] = field(default_factory=dict)
     filled_trades: list[FilledTrade] = field(default_factory=list)
@@ -53,6 +66,7 @@ class BotState:
     last_candle_time: Optional[datetime] = None
     current_signal: Optional[dict] = None
     total_pnl_pct: float = 0.0
+    signal_results: list[SignalResult] = field(default_factory=list)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def add_order(self, order: ActiveOrder):
@@ -67,6 +81,32 @@ class BotState:
         with self.lock:
             self.filled_trades.append(trade)
             self.total_pnl_pct += trade.pnl_pct
+
+    def add_signal_result(self, result: SignalResult):
+        with self.lock:
+            self.signal_results.append(result)
+            if len(self.signal_results) > 100:
+                self.signal_results = self.signal_results[-100:]
+
+    def get_signal_results(self, session: Optional[str] = None, limit: int = 50) -> list[dict]:
+        with self.lock:
+            results = self.signal_results[-limit:]
+            if session:
+                results = [r for r in results if r.session == session]
+            return [
+                {
+                    "pair": r.pair,
+                    "session": r.session,
+                    "signal": r.signal,
+                    "direction": r.direction,
+                    "entry": r.entry,
+                    "sl": r.sl,
+                    "tp": r.tp,
+                    "reason": r.reason,
+                    "checked_at": r.checked_at.isoformat(),
+                }
+                for r in reversed(results)
+            ]
 
     def get_trades(self) -> list[dict]:
         with self.lock:

@@ -52,16 +52,34 @@ def poll_loop():
 
 
 def check_session_signals(session):
+    from trading_bot.state import SignalResult
     for pair in session.pairs:
         try:
             df = client.get_candles_df(pair, count=50)
             if df.empty:
+                state.add_signal_result(SignalResult(
+                    pair=pair, session=session.name, signal="SKIP",
+                    direction=None, entry=None, sl=None, tp=None,
+                    reason="no_data", checked_at=datetime.utcnow()
+                ))
                 continue
 
             pd_candles = df.iloc[:-5].copy() if len(df) > 5 else df.copy().iloc[:0]
             session_candles = df.copy()
 
             signal = run_signal(pd_candles, session_candles, pair)
+
+            state.add_signal_result(SignalResult(
+                pair=pair,
+                session=session.name,
+                signal=signal["signal"],
+                direction=signal.get("direction"),
+                entry=signal.get("entry"),
+                sl=signal.get("sl"),
+                tp=signal.get("tp"),
+                reason=signal.get("reason"),
+                checked_at=datetime.utcnow(),
+            ))
 
             if signal["signal"] in ("LONG", "SHORT"):
                 state.current_signal = signal
@@ -87,6 +105,11 @@ def check_session_signals(session):
 
         except Exception as e:
             log.error(f"Signal check error for {pair}: {e}")
+            state.add_signal_result(SignalResult(
+                pair=pair, session=session.name, signal="ERROR",
+                direction=None, entry=None, sl=None, tp=None,
+                reason=str(e), checked_at=datetime.utcnow()
+            ))
 
 
 @app.on_event("startup")
@@ -159,6 +182,11 @@ def trades():
 @app.get("/orders")
 def orders():
     return {"orders": state.get_orders()}
+
+
+@app.get("/signals")
+def signals(session: str = None, limit: int = 50):
+    return {"signals": state.get_signal_results(session=session, limit=limit)}
 
 
 @app.get("/live-trades")

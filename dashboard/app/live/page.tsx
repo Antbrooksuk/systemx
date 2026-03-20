@@ -1,6 +1,6 @@
 "use client";
 
-import { useLive, LiveOrder, LiveTrade, HistoricalTrade } from "../../hooks/useLive";
+import { useLive, LiveOrder, LiveTrade, HistoricalTrade, LiveSignalResult } from "../../hooks/useLive";
 import { StatCard } from "../../components/StatCard";
 import { TradeLog } from "../../components/TradeLog";
 
@@ -199,6 +199,44 @@ function TradesTable({ trades }: { trades: LiveTrade[] }) {
   );
 }
 
+function SignalsTable({ signals, session }: { signals: LiveSignalResult[]; session: string | undefined }) {
+  const sessionSignals = signals.filter(s => s.session === session);
+  if (sessionSignals.length === 0) {
+    return (
+      <div className="bg-card border border-border rounded-lg p-4">
+        <div className="text-muted text-xs uppercase tracking-wider mb-3">Signal Decisions</div>
+        <div className="text-center text-muted py-4 text-sm">No signals checked yet</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-4">
+      <div className="text-muted text-xs uppercase tracking-wider mb-3">Signal Decisions ({session || "current"})</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        {sessionSignals.map((s, i) => {
+          const isTrade = s.signal === "LONG" || s.signal === "SHORT";
+          return (
+            <div key={i} className={`border border-border rounded px-3 py-2 ${isTrade ? "border-profit/40 bg-profit/5" : "opacity-70"}`}>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-sm font-bold">{s.pair}</span>
+                <span className={`text-xs font-mono ${isTrade ? "text-profit" : "text-muted"}`}>
+                  {s.signal}
+                </span>
+              </div>
+              {s.reason && (
+                <div className="text-xs text-warn mt-1 truncate" title={s.reason}>
+                  {s.reason}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function LivePage() {
   const { state, error } = useLive();
 
@@ -307,6 +345,7 @@ export default function LivePage() {
 
         <OrdersTable orders={state.orders} />
         <TradesTable trades={state.trades} />
+        <SignalsTable signals={state?.signals || []} session={state?.session?.name} />
         {historicalTrades.length > 0 && (
           <TradeLog trades={historicalTrades} />
         )}
