@@ -5,7 +5,6 @@ import {
   useBacktest,
   RISK_OPTIONS,
   CAPITAL_OPTIONS,
-  YEAR_OPTIONS,
 } from "../hooks/useBacktest";
 import { StatCard } from "../components/StatCard";
 import { EquityCurve } from "../components/EquityCurve";
@@ -45,8 +44,9 @@ export default function Dashboard() {
     setSelectedCapital,
     selectedRisk,
     setSelectedRisk,
-    selectedYears,
-    setSelectedYears,
+    selectedYear,
+    setSelectedYear,
+    availableYears,
     fetchStrategies,
     reset,
     runInstant,
@@ -121,14 +121,15 @@ export default function Dashboard() {
             </select>
 
             <select
-              value={selectedYears}
-              onChange={(e) => setSelectedYears(Number(e.target.value))}
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
               disabled={state.running}
-              className="px-3 py-2 bg-card border border-border rounded-lg text-sm font-medium text-fg focus:outline-none focus:ring-2 focus:ring-border disabled:opacity-50 min-w-[80px]"
+              className="px-3 py-2 bg-card border border-border rounded-lg text-sm font-medium text-fg focus:outline-none focus:ring-2 focus:ring-border disabled:opacity-50 min-w-[90px]"
             >
-              {YEAR_OPTIONS.map((y) => (
+              <option value={0}>All</option>
+              {availableYears.map((y) => (
                 <option key={y} value={y}>
-                  {y === 0 ? "All" : `${y}y`}
+                  {y}
                 </option>
               ))}
             </select>

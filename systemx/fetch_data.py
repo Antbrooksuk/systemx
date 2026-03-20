@@ -55,7 +55,7 @@ def fetch_oanda_candles(client: OANDAClient, instrument: str, from_dt: datetime,
     return candles
 
 
-def save_parquet(candles: list[dict], output_path: Path):
+def save_parquet_by_year(candles: list[dict], pair: str, data_dir: Path):
     import pandas as pd
 
     rows = []
@@ -67,16 +67,18 @@ def save_parquet(candles: list[dict], output_path: Path):
             "Low": float(mid["l"]),
             "Close": float(mid["c"]),
             "Volume": int(c.get("volume", 0)),
+            "_ts": c["time"],
         })
 
-    df = pd.DataFrame(rows, index=pd.to_datetime([c["time"] for c in candles], utc=True))
+    df = pd.DataFrame(rows, index=pd.to_datetime([r["_ts"] for r in rows], utc=True))
     df = df.sort_index()
     df = df[~df.index.duplicated(keep='first')]
-    df.to_parquet(output_path)
-    if len(df) > 0:
-        print(f"  Saved {output_path.name}: {len(df)} candles, {df.index[0].date()} to {df.index[-1].date()}")
-    else:
-        print(f"  Saved {output_path.name}: 0 candles — no data in range")
+    df = df.drop(columns=["_ts"])
+
+    for year, grp in df.groupby(df.index.year):
+        out_path = data_dir / f"{pair}_{year}.parquet"
+        grp.to_parquet(out_path)
+        print(f"  {pair}_{year}: {len(grp)} candles, {grp.index[0].date()} to {grp.index[-1].date()}")
 
 
 def main():
@@ -103,19 +105,19 @@ def main():
 
     for pair in args.pairs:
         oanda_symbol = OANDAClient.to_oanda_symbol(pair)
-        output_path = DATA_DIR / f"{pair}_oanda.parquet"
+        existing_files = sorted(DATA_DIR.glob(f"{pair}_*.parquet"))
 
-        existing = 0
-        if output_path.exists():
-            if not args.refresh:
-                import pandas as pd
-                df = pd.read_parquet(output_path)
-                existing = len(df)
-                print(f"  {pair}: {existing} candles already cached ({df.index[0].date()} to {df.index[-1].date()}) — skipped (use --refresh to re-fetch)")
-                continue
-            else:
-                output_path.unlink()
-                print(f"  {pair}: deleted existing file, re-fetching...")
+        if existing_files and not args.refresh:
+            import pandas as pd
+            for f in existing_files:
+                df = pd.read_parquet(f)
+                print(f"  {f.stem}: {len(df)} candles already cached — skipped (use --refresh to re-fetch)")
+            continue
+
+        if args.refresh:
+            for f in existing_files:
+                f.unlink()
+                print(f"  Deleted {f.name}")
 
         if args.dry_run:
             print(f"  Would fetch: {from_dt.date()} → {to_dt.date()} (~{(args.years * 365 * 288) // 1000}K candles)")
@@ -130,7 +132,7 @@ def main():
             continue
 
         if candles:
-            save_parquet(candles, output_path)
+            save_parquet_by_year(candles, pair, DATA_DIR)
         else:
             print(f"  No candles returned for {pair}")
 

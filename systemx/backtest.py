@@ -29,13 +29,18 @@ SESSION_WINDOWS = {
 }
 
 
-def load_data() -> Dict[str, pd.DataFrame]:
+def load_data(year: int = 0) -> Dict[str, pd.DataFrame]:
+    import re
     data = {}
     for pair in PAIRS:
-        oanda_file = DATA_DIR / f"{pair}_oanda.parquet"
-        if not oanda_file.exists():
-            raise FileNotFoundError(f"Missing {oanda_file}. Download from OANDA first.")
-        df = pd.read_parquet(oanda_file)
+        if year > 0:
+            file = DATA_DIR / f"{pair}_{year}.parquet"
+        else:
+            files = sorted(DATA_DIR.glob(f"{pair}_*.parquet"), key=lambda f: f.name)
+            file = files[-1] if files else None
+        if not file or not file.exists():
+            raise FileNotFoundError(f"Missing data file for {pair}. Run: python3 fetch_data.py first")
+        df = pd.read_parquet(file)
         df.index = pd.to_datetime(df.index)
         df = df.sort_index()
         data[pair] = df
@@ -57,9 +62,9 @@ def extract_session(df: pd.DataFrame, target_date: date, window: str) -> pd.Data
     return df_day.between_time(start, end)
 
 
-def run_backtest(period_days: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01) -> Dict:
+def run_backtest(year: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01) -> Dict:
     set_strategy(strategy)
-    data = load_data()
+    data = load_data(year)
 
     capital = starting_capital
     max_capital = capital
@@ -75,10 +80,8 @@ def run_backtest(period_days: int = 0, strategy: str = "base", starting_capital:
 
     all_dates = sorted(set(data[PAIRS[0]].index.date))
 
-    if period_days > 0:
-        data_end = max(all_dates)
-        cutoff = pd.Timestamp(data_end) - timedelta(days=period_days)
-        all_dates = [d for d in all_dates if d >= cutoff.date()]
+    if year > 0:
+        all_dates = [d for d in all_dates if d.year == year]
 
     for target_date in all_dates:
         for session_name in SESSION_WINDOWS:

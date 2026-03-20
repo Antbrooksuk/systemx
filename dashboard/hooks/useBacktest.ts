@@ -6,6 +6,7 @@ import {
   runBacktest,
   streamBacktest,
   getStrategies,
+  getYears,
 } from "../lib/api";
 
 export interface Strategy {
@@ -16,9 +17,8 @@ export interface Strategy {
 
 const RISK_OPTIONS = [0.005, 0.01, 0.015, 0.02];
 const CAPITAL_OPTIONS = [1000, 2000, 3000, 5000, 10000];
-const YEAR_OPTIONS = [0, 1, 2, 3];
 
-export { RISK_OPTIONS, CAPITAL_OPTIONS, YEAR_OPTIONS };
+export { RISK_OPTIONS, CAPITAL_OPTIONS };
 
 const initialState: State = {
   starting_capital: 2000,
@@ -39,7 +39,8 @@ export function useBacktest() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>("base");
   const [selectedCapital, setSelectedCapital] = useState<number>(2000);
   const [selectedRisk, setSelectedRisk] = useState<number>(0.01);
-  const [selectedYears, setSelectedYears] = useState<number>(0);
+  const [selectedYear, setSelectedYear] = useState<number>(0);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [strategies, setStrategies] = useState<Strategy[]>([
     {
       key: "base",
@@ -56,13 +57,14 @@ export function useBacktest() {
 
   const fetchStrategies = useCallback(async () => {
     try {
-      const data = await getStrategies();
-      const list = Object.entries(data).map(([key, cfg]: [string, any]) => ({
+      const [stratData, yearsData] = await Promise.all([getStrategies(), getYears()]);
+      const list = Object.entries(stratData).map(([key, cfg]: [string, any]) => ({
         key,
         label: cfg.label,
         description: cfg.description,
       }));
       setStrategies(list);
+      setAvailableYears(yearsData.years || []);
     } catch {
       // keep defaults
     }
@@ -92,8 +94,7 @@ export function useBacktest() {
     setState((prev) => ({ ...prev, running: true }));
     try {
       const result = await runBacktest(
-        0,
-        selectedYears,
+        selectedYear,
         selectedStrategy,
         selectedCapital,
         selectedRisk,
@@ -115,7 +116,7 @@ export function useBacktest() {
       console.error("Backtest error:", error);
       setState((prev) => ({ ...prev, running: false }));
     }
-  }, [selectedStrategy, selectedCapital, selectedRisk]);
+  }, [selectedStrategy, selectedCapital, selectedRisk, selectedYear]);
 
   const runStream = useCallback(() => {
     setState((prev) => ({
@@ -151,9 +152,8 @@ export function useBacktest() {
           setState((prev) => ({ ...prev, running: false }));
         }
       },
-      selectedYears,
+      selectedYear,
       selectedStrategy,
-      0,
       selectedCapital,
       selectedRisk,
     );
@@ -164,19 +164,20 @@ export function useBacktest() {
     };
 
     return () => ws.close();
-  }, [selectedStrategy]);
+  }, [selectedStrategy, selectedCapital, selectedRisk, selectedYear]);
 
   return {
     state,
     strategies,
+    availableYears,
     selectedStrategy,
     setSelectedStrategy,
     selectedCapital,
     setSelectedCapital,
     selectedRisk,
     setSelectedRisk,
-    selectedYears,
-    setSelectedYears,
+    selectedYear,
+    setSelectedYear,
     fetchStrategies,
     fetchStatus,
     reset,

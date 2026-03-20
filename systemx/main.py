@@ -6,7 +6,7 @@ import asyncio
 import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from backtest import run_backtest, get_status
+from backtest import run_backtest, get_status, PAIRS
 from mode_b import STRATEGY_PRESETS
 
 app = FastAPI(title="Openclaw Mode B")
@@ -46,12 +46,24 @@ def list_strategies():
     }
 
 
+@app.get("/years")
+def list_years():
+    import re
+    from pathlib import Path
+    data_dir = Path(__file__).parent / "data"
+    years = set()
+    for f in data_dir.glob("*.parquet"):
+        m = re.search(r"_(\d{4})\.parquet$", f.name)
+        if m:
+            years.add(int(m.group(1)))
+    return {"years": sorted(years, reverse=True)}
+
+
 @app.get("/backtest")
-def backtest(period_days: int = 0, years: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01):
+def backtest(year: int = 0, strategy: str = "base", starting_capital: float = 2000.0, risk_pct: float = 0.01):
     if strategy not in STRATEGY_PRESETS:
         return {"error": f"Unknown strategy: {strategy}. Available: {list(STRATEGY_PRESETS.keys())}"}
-    days = years * 365 if years > 0 else period_days
-    result = run_backtest(days, strategy, starting_capital, risk_pct)
+    result = run_backtest(year, strategy, starting_capital, risk_pct)
     return result
 
 
@@ -61,8 +73,7 @@ async def backtest_stream(websocket: WebSocket):
     
     try:
         msg = await websocket.receive_json()
-        period_days = msg.get("period_days", 0)
-        years = msg.get("years", 0)
+        year = msg.get("year", 0)
         strategy = msg.get("strategy", "base")
         starting_capital = msg.get("starting_capital", 2000.0)
         risk_pct = msg.get("risk_pct", 0.01)
@@ -78,8 +89,7 @@ async def backtest_stream(websocket: WebSocket):
             "strategy_label": STRATEGY_PRESETS[strategy]["label"],
         })
         
-        days = years * 365 if years > 0 else period_days
-        result = run_backtest(days, strategy, starting_capital, risk_pct)
+        result = run_backtest(year, strategy, starting_capital, risk_pct)
         
         for i, trade in enumerate(result["trades"]):
             trade_data = {
