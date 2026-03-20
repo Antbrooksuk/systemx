@@ -71,7 +71,7 @@ export function TradeLog({ trades }: TradeLogProps) {
                 <td className={`py-1.5 pr-4 ${getSignalColor(trade.signal)}`}>
                   {trade.signal === "SKIP" ? "SKIP" : trade.signal}
                 </td>
-                <td className="py-1.5 pr-4 text-right text-muted">{trade.units && trade.entry ? `£${(trade.units * trade.entry).toFixed(0)}` : "-"}</td>
+                <td className="py-1.5 pr-4 text-right text-muted">{trade.units && trade.entry && trade.sl ? `£${Math.abs(trade.units * (trade.entry - trade.sl)).toFixed(0)}` : "-"}
                 <td className="py-1.5 pr-4 text-right">{trade.entry?.toFixed(5) || "-"}</td>
                 <td className={`py-1.5 pr-4 text-right ${getExitColor(trade.exit_reason)}`} title={trade.skip_reason || undefined}>
                   {trade.exit_reason === "SKIP" && trade.skip_reason ? (
