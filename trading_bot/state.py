@@ -7,6 +7,14 @@ from typing import Optional
 from enum import Enum
 import threading
 
+def parse_datetime(dt_str: Optional[str]) -> Optional[datetime]:
+    if dt_str is None:
+        return None
+    try:
+        return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
 TRADES_FILE = os.path.join(os.path.dirname(__file__), "trades.json")
 
 
@@ -83,7 +91,11 @@ class BotState:
                     trades_data = data.get('trades', [])
                     for t in trades_data:
                         try:
-                            self.filled_trades.append(FilledTrade(**t))
+                            trade_data = t.copy()
+                            trade_data['entry_time'] = parse_datetime(trade_data.get('entry_time'))
+                            trade_data['exit_time'] = parse_datetime(trade_data.get('exit_time'))
+                            trade_data['completed_at'] = parse_datetime(trade_data.get('completed_at'))
+                            self.filled_trades.append(FilledTrade(**trade_data))
                         except Exception as trade_error:
                             print(f"Failed to load trade {t.get('oanda_trade_id', 'unknown')}: {trade_error}")
                             continue
@@ -109,6 +121,7 @@ class BotState:
                     "pips": t.pips,
                     "pnl_pct": t.pnl_pct,
                     "oanda_trade_id": t.oanda_trade_id,
+                    "completed_at": t.completed_at.isoformat() if t.completed_at else None,
                 }
                 for t in self.filled_trades
             ]
