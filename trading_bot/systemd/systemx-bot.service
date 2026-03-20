@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-User=root
+User=openclaw
 WorkingDirectory=/opt/systemx
 Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=/opt/systemx/.env
-ExecStart=/opt/systemx/venv/bin/python -m uvicorn trading_bot.main:app --host 127.0.0.1 --port 8001
+ExecStart=/opt/systemx/venv/bin/python -m uvicorn trading_bot.main:app --host 0.0.0.0 --port 8001
 Restart=always
 RestartSec=10
 
