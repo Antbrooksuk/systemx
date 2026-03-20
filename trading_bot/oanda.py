@@ -48,6 +48,11 @@ class OANDAClient:
         self.headers = HEADERS
         self.account_id = OANDA_ACCOUNT_ID
 
+    @staticmethod
+    def to_oanda_symbol(pair: str) -> str:
+        mapping = {"EURUSD": "EUR_USD", "GBPUSD": "GBP_USD", "USDJPY": "USD_JPY"}
+        return mapping.get(pair, pair.replace("USD", "_USD"))
+
     def _get(self, path: str, params: Optional[dict] = None) -> dict:
         with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
             resp = client.get(path, params=params)
@@ -79,8 +84,9 @@ class OANDAClient:
             return resp.json()
 
     def get_candles(self, instrument: str, count: int = 20, granularity: str = "M5") -> list[Candle]:
+        oanda_symbol = self.to_oanda_symbol(instrument)
         data = self._get(
-            f"/v3/instruments/{instrument}/candles",
+            f"/v3/instruments/{oanda_symbol}/candles",
             params={"granularity": granularity, "count": count},
         )
         candles = []
@@ -145,7 +151,7 @@ class OANDAClient:
         order: dict = {
             "order": {
                 "type": order_type,
-                "instrument": instrument,
+                "instrument": self.to_oanda_symbol(instrument),
                 "units": units_str,
                 "timeInForce": "GTD",
                 "gtdTime": (datetime.utcnow() + timedelta(minutes=25)).strftime("%Y-%m-%dT%H:%M:%SZ"),
