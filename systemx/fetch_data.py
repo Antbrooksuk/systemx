@@ -122,7 +122,12 @@ def main():
             continue
 
         print(f"Fetching {pair} ({oanda_symbol})...")
-        candles = fetch_oanda_candles(client, oanda_symbol, from_dt, to_dt)
+        try:
+            candles = fetch_oanda_candles(client, oanda_symbol, from_dt, to_dt)
+        except Exception as e:
+            print(f"  FAILED: {e}")
+            time.sleep(1)
+            continue
 
         if candles:
             save_parquet(candles, output_path)
