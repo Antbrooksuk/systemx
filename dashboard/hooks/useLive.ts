@@ -97,20 +97,18 @@ export function useLive() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [statusRes, ordersRes, tradesRes, histRes, signalsRes] = await Promise.all([
+      const [statusRes, ordersRes, tradesRes, histRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/status`),
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/orders`),
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/live-trades`),
         fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/trades`),
-        fetch(`${process.env.NEXT_PUBLIC_BOT_API_URL}/signals`),
       ]);
 
-      const [status, ordersData, tradesData, histData, signalsData] = await Promise.all([
+      const [status, ordersData, tradesData, histData] = await Promise.all([
         statusRes.json(),
         ordersRes.json(),
         tradesRes.json(),
         histRes.json(),
-        signalsRes.json(),
       ]);
 
       setState({
@@ -118,7 +116,7 @@ export function useLive() {
         orders: ordersData.orders || [],
         trades: tradesData.trades || [],
         historicalTrades: histData.trades || [],
-        signals: signalsData.signals || [],
+        signals: [],
       });
       setError(null);
     } catch (e: any) {

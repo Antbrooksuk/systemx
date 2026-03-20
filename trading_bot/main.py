@@ -53,7 +53,7 @@ def poll_loop():
 
 
 def check_session_signals(session):
-    from trading_bot.state import SignalResult
+    from trading_bot.state import FilledTrade
     if getattr(state, "_last_checked_session", None) != session.name:
         state.checked_pairs = set()
         state._last_checked_session = session.name
@@ -61,11 +61,6 @@ def check_session_signals(session):
         try:
             df = client.get_candles_df(pair, count=50)
             if df.empty:
-                state.add_signal_result(SignalResult(
-                    pair=pair, session=session.name, signal="SKIP",
-                    direction=None, entry=None, sl=None, tp=None,
-                    reason="no_data", checked_at=datetime.utcnow()
-                ))
                 continue
 
             pd_candles = df.iloc[:-5].copy() if len(df) > 5 else df.copy().iloc[:0]
@@ -73,17 +68,28 @@ def check_session_signals(session):
 
             signal = run_signal(pd_candles, session_candles, pair)
 
-            state.add_signal_result(SignalResult(
-                pair=pair,
-                session=session.name,
-                signal=signal["signal"],
-                direction=signal.get("direction"),
-                entry=signal.get("entry"),
-                sl=signal.get("sl"),
-                tp=signal.get("tp"),
-                reason=signal.get("reason"),
-                checked_at=datetime.utcnow(),
-            ))
+            if signal["signal"] == "SKIP":
+                already_recorded = any(
+                    t.pair == pair and t.exit_reason == "SKIP"
+                    for t in state.filled_trades
+                )
+                if not already_recorded:
+                    state.add_trade(FilledTrade(
+                        pair=pair,
+                        session=session.name,
+                        direction="SKIP",
+                        units=0,
+                        entry_time=datetime.utcnow(),
+                        entry_price=0,
+                        sl_price=0,
+                        tp_price=0,
+                        exit_time=datetime.utcnow(),
+                        exit_price=0,
+                        exit_reason="SKIP",
+                        pips=0,
+                        pnl_pct=0,
+                        oanda_trade_id=f"skip_{pair}_{session.name}",
+                    ))
 
             if signal["signal"] in ("LONG", "SHORT"):
                 state.current_signal = signal
@@ -109,11 +115,6 @@ def check_session_signals(session):
 
         except Exception as e:
             log.error(f"Signal check error for {pair}: {e}")
-            state.add_signal_result(SignalResult(
-                pair=pair, session=session.name, signal="ERROR",
-                direction=None, entry=None, sl=None, tp=None,
-                reason=str(e), checked_at=datetime.utcnow()
-            ))
 
 
 @app.on_event("startup")
@@ -191,9 +192,7 @@ def orders():
     return {"orders": state.get_orders()}
 
 
-@app.get("/signals")
-def signals(session: str = None, limit: int = 50):
-    return {"signals": state.get_signal_results(session=session, limit=limit)}
+
 
 
 @app.get("/live-trades")

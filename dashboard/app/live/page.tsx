@@ -242,12 +242,12 @@ export default function LivePage() {
 
   const currentSession = state?.session?.name;
 
-  const historicalTrades = (state?.historicalTrades || []).map((t: HistoricalTrade) => ({
+  const allTradeEvents = (state?.historicalTrades || []).map((t: HistoricalTrade) => ({
     date: t.exit_time || t.entry_time,
     pair: t.pair.replace("_", ""),
     session: t.session,
-    signal: t.direction,
-    skip_reason: null,
+    signal: t.direction || (t.exit_reason === "SKIP" ? "SKIP" : ""),
+    skip_reason: t.exit_reason === "SKIP" ? (t.sl > 0 ? "" : "") : null,
     entry: t.entry,
     sl: t.sl,
     tp: t.tp,
@@ -256,32 +256,9 @@ export default function LivePage() {
     pips: t.pips,
     pnl_pct: t.pnl_pct,
     spread_pips: 0,
-    filled: true,
+    filled: t.exit_reason !== "SKIP",
     units: t.units,
   }));
-
-  const skippedSignals = (state?.signals || [])
-    .filter(s => s.signal === "SKIP" && s.session === currentSession)
-    .map((s) => ({
-      date: s.checked_at,
-      pair: s.pair,
-      session: s.session,
-      signal: "SKIP",
-      skip_reason: s.reason,
-      entry: null,
-      sl: null,
-      tp: null,
-      exit_price: null,
-      exit_reason: "SKIP",
-      pips: 0,
-      pnl_pct: 0,
-      spread_pips: 0,
-      filled: false,
-    }));
-
-  const allTradeEvents = [...historicalTrades, ...skippedSignals].sort((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
 
   if (error) {
     return (
