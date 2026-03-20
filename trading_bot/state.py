@@ -31,6 +31,7 @@ class FilledTrade:
     pair: str
     session: str
     direction: str
+    units: int
     entry_time: datetime
     entry_price: float
     sl_price: float
@@ -120,6 +121,7 @@ class BotState:
                     "pair": t.pair,
                     "session": t.session,
                     "direction": t.direction,
+                    "units": t.units,
                     "entry_time": t.entry_time.isoformat() if t.entry_time else None,
                     "entry": t.entry_price,
                     "sl": t.sl_price,

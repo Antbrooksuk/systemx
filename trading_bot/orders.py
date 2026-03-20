@@ -122,6 +122,7 @@ class OrderManager:
                     pair=pair,
                     session="live",
                     direction=direction,
+                    units=abs(units),
                     entry_time=datetime.fromisoformat(open_time.replace("Z", "+00:00")),
                     entry_price=entry_price,
                     sl_price=sl_price,
@@ -162,7 +163,7 @@ class OrderManager:
                 oanda_pair = trade.get("instrument", "")
                 pair = OANDA.from_oanda_symbol(oanda_pair)
                 pl = float(trade.get("realizedPL", 0))
-                units = int(trade.get("units", 0))
+                units = int(trade.get("initialUnits", 0))
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
                 exit_price = float(trade.get("closeoutPrice", 0))
@@ -200,6 +201,7 @@ class OrderManager:
                         pair=pair,
                         session="live",
                         direction=direction,
+                        units=abs(units),
                         entry_time=datetime.fromisoformat(open_time.replace("Z", "+00:00")) if open_time else datetime.utcnow(),
                         entry_price=entry_price,
                         sl_price=sl_price,

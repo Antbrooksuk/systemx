@@ -13,6 +13,7 @@ export interface Trade {
   pnl_pct: number;
   spread_pips: number;
   filled: boolean;
+  units?: number;
 }
 
 export interface EquityPoint {

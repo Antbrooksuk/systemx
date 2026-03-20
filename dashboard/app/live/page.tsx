@@ -257,6 +257,7 @@ export default function LivePage() {
     pnl_pct: t.pnl_pct,
     spread_pips: 0,
     filled: true,
+    units: t.units,
   }));
 
   const skippedSignals = (state?.signals || [])

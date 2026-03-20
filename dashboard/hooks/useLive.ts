@@ -42,6 +42,7 @@ export interface HistoricalTrade {
   pair: string;
   session: string;
   direction: string;
+  units: number;
   entry_time: string;
   entry: number;
   sl: number;

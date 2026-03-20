@@ -51,6 +51,7 @@ export function TradeLog({ trades }: TradeLogProps) {
               <th className="text-left pb-2 pr-4">Pair</th>
               <th className="text-left pb-2 pr-4">Session</th>
               <th className="text-left pb-2 pr-4">Signal</th>
+              <th className="text-right pb-2 pr-4">Units</th>
               <th className="text-right pb-2 pr-4">Entry</th>
               <th className="text-right pb-2 pr-4">Exit</th>
               <th className="text-right pb-2 pr-4">Pips</th>
@@ -70,6 +71,7 @@ export function TradeLog({ trades }: TradeLogProps) {
                 <td className={`py-1.5 pr-4 ${getSignalColor(trade.signal)}`}>
                   {trade.signal === "SKIP" ? "SKIP" : trade.signal}
                 </td>
+                <td className="py-1.5 pr-4 text-right text-muted">{trade.units ? `${trade.units}k` : "-"}</td>
                 <td className="py-1.5 pr-4 text-right">{trade.entry?.toFixed(5) || "-"}</td>
                 <td className={`py-1.5 pr-4 text-right ${getExitColor(trade.exit_reason)}`} title={trade.skip_reason || undefined}>
                   {trade.exit_reason === "SKIP" && trade.skip_reason ? (
@@ -91,7 +93,7 @@ export function TradeLog({ trades }: TradeLogProps) {
             ))}
             {sortedTrades.length === 0 && (
               <tr>
-                <td colSpan={9} className="text-center text-muted py-8">
+                <td colSpan={10} className="text-center text-muted py-8">
                   No trades yet
                 </td>
               </tr>
