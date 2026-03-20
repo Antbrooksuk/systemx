@@ -1,0 +1,13 @@
+# Core system (backtest)
+pandas
+numpy
+
+# Trading bot
+oandapyV20==3.3.0
+fastapi
+uvicorn
+httpx
+python-dotenv
+
+# Dev
+pytest

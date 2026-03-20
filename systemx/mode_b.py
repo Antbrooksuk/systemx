@@ -306,51 +306,40 @@ def simulate_trade(
     pip_value = PAIR_CONFIG[pair]["pip_value"]
     spread_pips = PAIR_CONFIG[pair]["spread_pips"]
     spread_value = spread_pips * pip_value
+    sl_slippage_value = 0.3 * pip_value
 
     if direction == "LONG":
         effective_entry = entry + spread_value
         effective_tp = tp + spread_value
+        effective_sl = sl - spread_value - sl_slippage_value
     else:
         effective_entry = entry - spread_value
         effective_tp = tp - spread_value
-
-    first_candle = post_candles.iloc[0]
-    c2_high = float(first_candle["High"])
-    c2_low = float(first_candle["Low"])
-
-    filled = (c2_low <= entry <= c2_high) if direction == "LONG" else (c2_low <= entry <= c2_high)
-
-    if not filled:
-        return TradeResult(
-            exit_price=None,
-            exit_reason=ExitReason.LIMIT_NOT_REACHED,
-            pips=0,
-            pnl_pct=0,
-            entry_time=first_candle.name,
-            exit_time=None,
-            filled=False,
-        )
-
-    sl_slippage_value = 0.3 * pip_value
-    if direction == "LONG":
-        effective_sl = sl - spread_value - sl_slippage_value
-    else:
         effective_sl = sl + spread_value + sl_slippage_value
 
     risk_pips = abs(effective_entry - effective_sl) / pip_value
 
-    entry_time = first_candle.name
+    entry_time = None
     exit_price = None
     exit_reason = ExitReason.NONE
-    candles_in_trade = 0
+    candles_scanned = 0
 
-    for i in range(1, min(len(post_candles), max_candles + 1)):
+    for i in range(len(post_candles)):
         candle = post_candles.iloc[i]
         high = float(candle["High"])
         low = float(candle["Low"])
         close = float(candle["Close"])
+        candles_scanned += 1
 
-        candles_in_trade += 1
+        if entry_time is None:
+            entry_time = candle.name
+            if direction == "LONG":
+                if low > entry:
+                    continue
+            else:
+                if entry > high:
+                    continue
+            continue
 
         if direction == "LONG":
             if low <= effective_sl:
@@ -371,15 +360,21 @@ def simulate_trade(
                 exit_reason = ExitReason.TP
                 break
 
-        if candles_in_trade >= max_candles:
+        if candles_scanned >= max_candles:
             exit_price = close
             exit_reason = ExitReason.TIME_STOP
             break
 
-    if exit_price is None:
-        last_candle = post_candles.iloc[min(len(post_candles) - 1, max_candles)]
-        exit_price = float(last_candle["Close"])
-        exit_reason = ExitReason.TIME_STOP
+    if entry_time is None or exit_reason == ExitReason.NONE:
+        return TradeResult(
+            exit_price=None,
+            exit_reason=ExitReason.LIMIT_NOT_REACHED,
+            pips=0,
+            pnl_pct=0,
+            entry_time=entry_time,
+            exit_time=None,
+            filled=False,
+        )
 
     if direction == "LONG":
         pips = (exit_price - effective_entry) / pip_value

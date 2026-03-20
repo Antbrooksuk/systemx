@@ -1,0 +1,18 @@
+[Unit]
+Description=SYSTEM-X Trading Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/systemx
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/opt/systemx/.env
+ExecStart=/opt/systemx/venv/bin/python -m uvicorn trading_bot.main:app --host 127.0.0.1 --port 8001
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/systemx/stdout.log
+StandardError=append:/var/log/systemx/stderr.log
+
+[Install]
+WantedBy=multi-user.target

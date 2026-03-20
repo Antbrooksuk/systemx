@@ -35,7 +35,7 @@ coverage
 out/
 build
 dist
-storybook-static
+storybook-static/
 
 # Debug
 npm-debug.log*
@@ -59,3 +59,20 @@ yarn-error.log*
 /.cursor/
 # pnpm audit temp file
 npm-audit/.audit-tmp.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+.venv/
+
+# Data (parquet files — too large for git)
+data/
+
+# Dashboard dependencies
+dashboard/node_modules/
+dashboard/.next/
