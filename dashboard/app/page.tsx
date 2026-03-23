@@ -68,6 +68,9 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               SYSTEM-X
+              <span className="text-xs px-2 py-0.5 bg-warn/20 text-warn rounded">
+                TEST
+              </span>
             </h1>
             <p className="text-muted text-sm">
               {currentStrategy ? (
@@ -126,7 +129,6 @@ export default function Dashboard() {
               disabled={state.running}
               className="px-3 py-2 bg-card border border-border rounded-lg text-sm font-medium text-fg focus:outline-none focus:ring-2 focus:ring-border disabled:opacity-50 min-w-[90px]"
             >
-              <option value={0}>All</option>
               {availableYears.map((y) => (
                 <option key={y} value={y}>
                   {y}

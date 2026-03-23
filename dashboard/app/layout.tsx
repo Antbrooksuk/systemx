@@ -24,7 +24,7 @@ export default function RootLayout({
           </Link>
           <Link
             href="/live"
-            className="px-4 py-2 text-sm font-medium text-muted hover:text-fg transition-colors border-b-2 border-border"
+            className="px-4 py-2 text-sm font-medium text-muted hover:text-fg transition-colors"
           >
             Live
           </Link>

@@ -7,14 +7,25 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
+  Area,
+  AreaChart,
 } from "recharts";
 import { EquityPoint } from "../lib/types";
 
-interface EquityCurveProps {
-  data: EquityPoint[];
+interface EVData {
+  trade: number;
+  ev: number;
+  upper: number;
+  lower: number;
 }
 
-export function EquityCurve({ data }: EquityCurveProps) {
+interface EquityCurveProps {
+  data: EquityPoint[];
+  evData?: EVData[];
+  showEV?: boolean;
+}
+
+export function EquityCurve({ data, evData, showEV = false }: EquityCurveProps) {
   if (!data || data.length === 0) {
     return (
       <div className="bg-card border border-border rounded-lg p-4 h-64 flex items-center justify-center">
@@ -29,15 +40,40 @@ export function EquityCurve({ data }: EquityCurveProps) {
       a.date && b.date
         ? new Date(a.date).getTime() - new Date(b.date).getTime()
         : 0,
-    );
+    )
+    .map((point, idx) => ({ ...point, idx }));
+
+  const combinedData = chartData.map(point => {
+    const evPoint = evData?.find(ev => ev.trade === point.trade);
+    return {
+      ...point,
+      ev: evPoint?.ev,
+      upper: evPoint?.upper,
+      lower: evPoint?.lower,
+    };
+  });
 
   return (
     <div className="bg-card border border-border rounded-lg p-4 h-125">
-      <div className="text-muted text-xs uppercase tracking-wider mb-2">
-        Equity Curve
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-muted text-xs uppercase tracking-wider">
+          Equity Curve
+        </div>
+        {evData && showEV && (
+          <div className="text-xs text-muted flex items-center gap-2">
+            <span className="inline-flex items-center gap-1">
+              <span className="w-3 h-0.5 bg-green-500 rounded"></span>
+              <span>EV Line</span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="w-3 h-0.5 bg-blue-500/30 rounded"></span>
+              <span>Cone</span>
+            </span>
+          </div>
+        )}
       </div>
       <ResponsiveContainer width="100%" height={500}>
-        <LineChart data={chartData}>
+        <AreaChart data={combinedData}>
           <XAxis
             dataKey="date"
             stroke="#737373"
@@ -60,7 +96,7 @@ export function EquityCurve({ data }: EquityCurveProps) {
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
-              const point = payload[0].payload as EquityPoint;
+              const point = payload[0].payload as any;
               const dateStr = point.date
                 ? new Date(point.date).toLocaleDateString()
                 : "Start";
@@ -69,16 +105,52 @@ export function EquityCurve({ data }: EquityCurveProps) {
                   <div className="text-[#737373] text-xs mb-1">{dateStr}</div>
                   <div className="text-white text-sm">
                     {(() => {
-                      const v = payload[0].value as number;
+                      const v = point.equity;
                       if (v >= 1000000) return `£${(v / 1000000).toFixed(2)}M`;
                       if (v >= 1000) return `£${(v / 1000).toFixed(1)}K`;
                       return `£${v.toFixed(2)}`;
                     })()}
                   </div>
+                  {showEV && point.ev && (
+                    <>
+                      <div className="text-green-400 text-xs mt-1">EV: £{point.ev.toFixed(2)}</div>
+                      {point.upper && <div className="text-blue-300 text-xs">Upper: £{point.upper.toFixed(2)}</div>}
+                      {point.lower && <div className="text-blue-300 text-xs">Lower: £{point.lower.toFixed(2)}</div>}
+                    </>
+                  )}
                 </div>
               );
             }}
           />
+          {showEV && evData && (
+            <>
+              <Area
+                type="monotone"
+                dataKey="upper"
+                stroke="none"
+                fill="#3b82f6"
+                fillOpacity={0.1}
+                isAnimationActive={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="lower"
+                stroke="none"
+                fill="#3b82f6"
+                fillOpacity={0.05}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="ev"
+                stroke="#22c55e"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+            </>
+          )}
           <Line
             type="monotone"
             dataKey="equity"
@@ -86,7 +158,7 @@ export function EquityCurve({ data }: EquityCurveProps) {
             strokeWidth={2}
             dot={false}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

@@ -9,3 +9,8 @@
 2026-03-20 18:12:38 ERROR    Error checking orders: Illegal header value b'Bearer '
 2026-03-20 18:12:38 ERROR    Error checking closed trades: Illegal header value b'Bearer '
 2026-03-20 18:13:07 INFO     SYSTEM-X Bot shutting down...
+2026-03-23 10:09:00 INFO     SYSTEM-X Bot starting up...
+2026-03-23 10:09:00 INFO     Poll thread started
+2026-03-23 10:09:01 INFO     TRADE CLOSED: 36 USDJPY LONG exit=159.221 pl=-0.10 reason=SL
+2026-03-23 10:09:01 INFO     TRADE CLOSED: 18 GBPUSD SHORT exit=1.33232 pl=1.08 reason=TP
+2026-03-23 10:09:01 INFO     TRADE CLOSED: 6 GBPUSD SHORT exit=1.33156 pl=-0.00 reason=SL

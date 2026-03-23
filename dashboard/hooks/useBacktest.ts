@@ -39,7 +39,7 @@ export function useBacktest() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>("base");
   const [selectedCapital, setSelectedCapital] = useState<number>(2000);
   const [selectedRisk, setSelectedRisk] = useState<number>(0.01);
-  const [selectedYear, setSelectedYear] = useState<number>(0);
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [strategies, setStrategies] = useState<Strategy[]>([
     {
