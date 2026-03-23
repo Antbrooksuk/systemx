@@ -76,3 +76,7 @@ data/
 # Dashboard dependencies
 dashboard/node_modules/
 dashboard/.next/
+
+# Bot trades (local only)
+trading_bot/trades.json
+trading_bot/bot.log

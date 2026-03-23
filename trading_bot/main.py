@@ -100,6 +100,7 @@ def check_session_signals(session):
                 )
                 if has_existing:
                     log.info(f"Signal {pair} {signal['signal']} — already has open order")
+                    state.current_signal = None
                     continue
 
                 order_id = order_manager.place_entry(
