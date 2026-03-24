@@ -149,10 +149,17 @@ class OANDAClient:
             currency=a["currency"],
         )
 
-    def get_orders(self) -> list[dict]:
+    def get_orders(self, state_filter: str = "PENDING") -> list[dict]:
         data = self._get(
             f"/v3/accounts/{self.account_id}/orders",
-            params={"state": "PENDING"},
+            params={"state": state_filter},
+        )
+        return data.get("orders", [])
+
+    def get_all_orders(self) -> list[dict]:
+        data = self._get(
+            f"/v3/accounts/{self.account_id}/orders",
+            params={"count": 100},
         )
         return data.get("orders", [])
 
@@ -182,7 +189,7 @@ class OANDAClient:
                 "instrument": self.to_oanda_symbol(instrument),
                 "units": units_str,
                 "timeInForce": "GTD",
-                "gtdTime": (datetime.utcnow() + timedelta(minutes=25)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "gtdTime": (datetime.utcnow() + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             }
         }
 

@@ -101,24 +101,34 @@ def check_session_signals(session):
                 
                 try:
                     open_trades = client.get_open_trades()
+                    pending_orders = client.get_orders()
                     has_open = any(
                         OANDAClient.from_oanda_symbol(t.get("instrument", "")) == pair
                         for t in open_trades
                     )
+                    has_pending_oanda = any(
+                        OANDAClient.from_oanda_symbol(o.get("instrument", "")) == pair
+                        for o in pending_orders
+                    )
                 except Exception as e:
                     log.warning(f"Could not check open trades for idempotency: {e}")
                     has_open = False
+                    has_pending_oanda = False
 
                 if has_pending:
-                    log.info(f"Signal {pair} {signal['signal']} — has pending order in state, skipping")
+                    log.info(f"Signal {pair} {signal['signal']} — has pending order in STATE, skipping")
                     state.current_signal = None
                     continue
+                    
+                if has_pending_oanda:
+                    log.warning(f"Signal {pair} {signal['signal']} — has pending order in OANDA but not in state! Possible sync issue")
                     
                 if has_open:
                     log.info(f"Signal {pair} {signal['signal']} — already has open trade in OANDA, skipping")
                     state.current_signal = None
                     continue
 
+                log.info(f"=== PLACING ORDER: {pair} {signal['direction']} entry={signal['entry']} ===")
                 order_id = order_manager.place_entry(
                     pair=pair,
                     direction=signal["direction"],
@@ -128,7 +138,10 @@ def check_session_signals(session):
                     session=session.name,
                 )
                 if order_id:
+                    log.info(f"=== ORDER PLACED SUCCESS: {order_id} ===")
                     state.current_signal = None
+                else:
+                    log.error(f"=== ORDER PLACEMENT FAILED: {pair} ===")
 
         except Exception as e:
             log.error(f"Signal check error for {pair}: {e}")

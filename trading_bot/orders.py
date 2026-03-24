@@ -189,7 +189,18 @@ class OrderManager:
                     continue
 
                 if not order_in_pending:
-                    log.warning(f"Order {order_id} disappeared but not in open trades - possible rejection, removing from tracking")
+                    log.warning(f"Order {order_id} disappeared from pending - checking if cancelled by OANDA")
+                    try:
+                        all_orders = self.client.get_all_orders()
+                        cancelled = [o for o in all_orders if str(o.get("id")) == order_id]
+                        if cancelled:
+                            order_state = cancelled[0].get("state", "unknown")
+                            cancel_time = cancelled[0].get("cancelledTime", "N/A")
+                            log.error(f"Order {order_id} state={order_state}, cancelled at={cancel_time}")
+                        else:
+                            log.warning(f"Order {order_id} not found in OANDA at all - may have expired or been filled then closed")
+                    except Exception as e:
+                        log.error(f"Could not check order status: {e}")
                     state.remove_order(order_id)
                     continue
 
