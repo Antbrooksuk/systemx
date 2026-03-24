@@ -209,7 +209,7 @@ class OANDAClient:
         return self._post(path, order)
 
     def cancel_order(self, order_id: str) -> dict:
-        return self._delete(f"/v3/accounts/{self.account_id}/orders/{order_id}")
+        return self._put(f"/v3/accounts/{self.account_id}/orders/{order_id}/cancel", {})
 
     def close_trade(self, trade_id: str, units: Optional[int] = None) -> dict:
         data = {}
