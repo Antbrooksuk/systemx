@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/an.brooks/Projects/dash/trading_bot/main.py", line 15, in <module>
+    from trading_bot.orders import OrderManager
+  File "/Users/an.brooks/Projects/dash/trading_bot/orders.py", line 84
+    else:
+         ^
+IndentationError: unindent does not match any outer indentation level

@@ -121,3 +121,23 @@
 2026-03-24 10:10:52 INFO     check_closed_trades: fetched 3 trades from OANDA
 2026-03-24 10:11:23 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
 2026-03-24 10:11:23 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:11:54 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:11:54 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:12:25 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:12:25 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:12:56 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:12:56 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:13:27 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:13:27 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:13:58 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:13:58 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:14:29 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:14:29 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:15:00 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:15:00 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:15:31 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:15:31 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:16:03 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:16:03 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:16:34 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:16:34 INFO     check_closed_trades: fetched 3 trades from OANDA
