@@ -205,11 +205,6 @@ class OANDAClient:
         else:
             path = f"/v3/accounts/{self.account_id}/orders"
 
-        if sl_price is not None:
-            order["order"]["stopLossOnFill"] = {"price": f"{sl_price:.5f}"}
-        if tp_price is not None:
-            order["order"]["takeProfitOnFill"] = {"price": f"{tp_price:.5f}"}
-
         return self._post(path, order)
 
     def cancel_order(self, order_id: str) -> dict:

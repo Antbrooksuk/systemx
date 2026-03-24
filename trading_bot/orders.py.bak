@@ -227,6 +227,10 @@ class OrderManager:
                 pip_value = PAIR_CONFIG[pair]["pip_value"]
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
+                sl_price = float(trade.get("stopLossOrder", {}).get("price", 0))
+                tp_price = float(trade.get("takeProfitOrder", {}).get("price", 0))
+                unrealized_pl = float(trade.get("unrealizedPL", 0))
+
                 if candles_open >= MAX_CANDLES:
                     try:
                         self.client.close_trade(trade_id)
@@ -331,6 +335,8 @@ class OrderManager:
                 direction = "SHORT" if units < 0 else "LONG"
                 entry_price = float(trade.get("price", 0))
                 exit_price = float(trade.get("averageClosePrice", 0))
+                sl_price = float(trade.get("stopLossOrder", {}).get("price", 0))
+                tp_price = float(trade.get("takeProfitOrder", {}).get("price", 0))
                 close_time = trade.get("closeTime", "")
                 open_time = trade.get("openTime", "")
 
