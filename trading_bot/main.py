@@ -94,29 +94,24 @@ def check_session_signals(session):
             if signal["signal"] in ("LONG", "SHORT"):
                 state.current_signal = signal
 
-                has_pending = any(
+                has_existing = any(
                     o.pair == pair
                     for o in list(state.active_orders.values())
                 )
-                
-                try:
-                    open_trades = client.get_open_trades()
-                    pending_orders = client.get_orders()
-                    has_open = any(
-                        OANDAClient.from_oanda_symbol(t.get("instrument", "")) == pair
-                        for t in open_trades
-                    )
-                    has_pending_oanda = any(
-                        OANDAClient.from_oanda_symbol(o.get("instrument", "")) == pair
-                        for o in pending_orders
-                    )
-                except Exception as e:
-                    log.warning(f"Could not check open trades for idempotency: {e}")
-                    has_open = False
-                    has_pending_oanda = False
+                if has_existing:
+                    log.info(f"Signal {pair} {signal['signal']} — already has open order")
+                    state.current_signal = None
+                    continue
 
-                if has_pending:
-                    log.info(f"Signal {pair} {signal['signal']} — has pending order in STATE, skipping")
+                order_id = order_manager.place_entry(
+                    pair=pair,
+                    direction=signal["direction"],
+                    entry_price=signal["entry"],
+                    sl_price=signal["sl"],
+                    tp_price=signal["tp"],
+                    session=session.name,
+                )
+                if order_id:
                     state.current_signal = None
                     continue
                     

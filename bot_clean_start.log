@@ -1,57 +1,23 @@
-2026-03-20 18:11:07 INFO     SYSTEM-X Bot starting up...
-2026-03-20 18:11:07 INFO     Poll thread started
-2026-03-20 18:11:07 ERROR    Error checking orders: Illegal header value b'Bearer '
-2026-03-20 18:11:07 ERROR    Error checking closed trades: Illegal header value b'Bearer '
-2026-03-20 18:11:37 ERROR    Error checking orders: Illegal header value b'Bearer '
-2026-03-20 18:11:38 ERROR    Error checking closed trades: Illegal header value b'Bearer '
-2026-03-20 18:12:08 ERROR    Error checking orders: Illegal header value b'Bearer '
-2026-03-20 18:12:08 ERROR    Error checking closed trades: Illegal header value b'Bearer '
-2026-03-20 18:12:38 ERROR    Error checking orders: Illegal header value b'Bearer '
-2026-03-20 18:12:38 ERROR    Error checking closed trades: Illegal header value b'Bearer '
-2026-03-20 18:13:07 INFO     SYSTEM-X Bot shutting down...
-2026-03-23 10:09:00 INFO     SYSTEM-X Bot starting up...
-2026-03-23 10:09:00 INFO     Poll thread started
-2026-03-23 10:09:01 INFO     TRADE CLOSED: 36 USDJPY LONG exit=159.221 pl=-0.10 reason=SL
-2026-03-23 10:09:01 INFO     TRADE CLOSED: 18 GBPUSD SHORT exit=1.33232 pl=1.08 reason=TP
-2026-03-23 10:09:01 INFO     TRADE CLOSED: 6 GBPUSD SHORT exit=1.33156 pl=-0.00 reason=SL
-2026-03-23 14:30:09 INFO     PLACING LIMIT LONG GBPUSD: entry=1.34555 sl=1.34525 tp=1.34615 units=66699
-2026-03-23 14:30:09 INFO     Limit order placed: 263 GBPUSD LONG
-2026-03-23 14:30:41 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:31:12 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:31:44 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:32:16 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:32:47 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:33:19 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:33:50 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:34:22 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:34:53 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:35:25 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:35:56 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:36:28 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:36:59 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:37:31 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:38:02 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:38:34 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:39:05 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:39:37 INFO     Signal GBPUSD LONG — already has open order
-2026-03-23 14:43:48 INFO     Order 263 no longer pending — may have filled
-2026-03-23 18:22:30 INFO     SYSTEM-X Bot starting up...
-2026-03-23 18:22:30 INFO     Poll thread started
-2026-03-23 18:22:30 INFO     SYSTEM-X Bot shutting down...
-2026-03-23 18:24:46 INFO     SYSTEM-X Bot starting up...
-2026-03-23 18:24:46 INFO     Poll thread started
-2026-03-23 18:24:46 INFO     SYSTEM-X Bot shutting down...
-2026-03-24 09:29:32 INFO     SYSTEM-X Bot starting up...
-2026-03-24 09:29:32 INFO     Poll thread started
-2026-03-24 09:29:32 INFO     SYSTEM-X Bot shutting down...
-2026-03-24 09:35:15 INFO     SYSTEM-X Bot starting up...
-2026-03-24 09:35:15 INFO     Poll thread started
-2026-03-24 09:35:15 INFO     SYSTEM-X Bot shutting down...
-2026-03-24 09:35:32 INFO     SYSTEM-X Bot starting up...
-2026-03-24 09:35:32 INFO     Poll thread started
-2026-03-24 09:35:32 INFO     SYSTEM-X Bot shutting down...
+/Users/an.brooks/Projects/dash/trading_bot/main.py:150: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+/Users/an.brooks/Projects/dash/trading_bot/main.py:160: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("shutdown")
+INFO:     Started server process [75444]
+INFO:     Waiting for application startup.
 2026-03-24 09:55:58 INFO     SYSTEM-X Bot starting up...
 2026-03-24 09:55:58 INFO     Poll thread started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
 2026-03-24 09:55:59 INFO     check_and_manage_orders: 49 pending orders, 0 open trades, 0 tracked orders
 2026-03-24 09:55:59 INFO     check_closed_trades: fetched 3 trades from OANDA
 2026-03-24 09:56:00 WARNING  Signal EURUSD SHORT — has pending order in OANDA but not in state! Possible sync issue
@@ -63,6 +29,7 @@
 2026-03-24 09:56:00 INFO     Order response: id=388, status=UNKNOWN, full={'orderCreateTransaction': {'id': '388', 'accountID': '101-004-38836191-001', 'userID': 38836191, 'batchID': '388', 'requestID': '79499741237045867', 'time': '2026-03-24T09:56:00.525984816Z', 'type': 'LIMIT_ORDER', 'instrument': 'EUR_USD', 'units': '66699', 'price': '1.15844', 'timeInForce': 'GTD', 'gtdTime': '2026-03-24T11:56:00.000000000Z', 'triggerCondition': 'DEFAULT', 'partialFill': 'DEFAULT', 'positionFill': 'DEFAULT', 'reason': 'CLIENT_ORDER'}, 'relatedTransactionIDs': ['388'], 'lastTransactionID': '388'}
 2026-03-24 09:56:00 WARNING  Order not accepted: status=UNKNOWN, result={'orderCreateTransaction': {'id': '388', 'accountID': '101-004-38836191-001', 'userID': 38836191, 'batchID': '388', 'requestID': '79499741237045867', 'time': '2026-03-24T09:56:00.525984816Z', 'type': 'LIMIT_ORDER', 'instrument': 'EUR_USD', 'units': '66699', 'price': '1.15844', 'timeInForce': 'GTD', 'gtdTime': '2026-03-24T11:56:00.000000000Z', 'triggerCondition': 'DEFAULT', 'partialFill': 'DEFAULT', 'positionFill': 'DEFAULT', 'reason': 'CLIENT_ORDER'}, 'relatedTransactionIDs': ['388'], 'lastTransactionID': '388'}
 2026-03-24 09:56:00 ERROR    === ORDER PLACEMENT FAILED: EURUSD ===
+INFO:     127.0.0.1:59627 - "GET /health HTTP/1.1" 200 OK
 2026-03-24 09:56:31 INFO     check_and_manage_orders: 50 pending orders, 0 open trades, 0 tracked orders
 2026-03-24 09:56:31 INFO     check_closed_trades: fetched 3 trades from OANDA
 2026-03-24 09:56:32 WARNING  Signal EURUSD SHORT — has pending order in OANDA but not in state! Possible sync issue
@@ -85,39 +52,3 @@
 2026-03-24 09:57:04 INFO     Order response: id=392, status=UNKNOWN, full={'orderCreateTransaction': {'id': '392', 'accountID': '101-004-38836191-001', 'userID': 38836191, 'batchID': '392', 'requestID': '115528538522294516', 'time': '2026-03-24T09:57:04.426316185Z', 'type': 'LIMIT_ORDER', 'instrument': 'EUR_USD', 'units': '66699', 'price': '1.15844', 'timeInForce': 'GTD', 'gtdTime': '2026-03-24T11:57:04.000000000Z', 'triggerCondition': 'DEFAULT', 'partialFill': 'DEFAULT', 'positionFill': 'DEFAULT', 'reason': 'CLIENT_ORDER'}, 'relatedTransactionIDs': ['392'], 'lastTransactionID': '392'}
 2026-03-24 09:57:04 WARNING  Order not accepted: status=UNKNOWN, result={'orderCreateTransaction': {'id': '392', 'accountID': '101-004-38836191-001', 'userID': 38836191, 'batchID': '392', 'requestID': '115528538522294516', 'time': '2026-03-24T09:57:04.426316185Z', 'type': 'LIMIT_ORDER', 'instrument': 'EUR_USD', 'units': '66699', 'price': '1.15844', 'timeInForce': 'GTD', 'gtdTime': '2026-03-24T11:57:04.000000000Z', 'triggerCondition': 'DEFAULT', 'partialFill': 'DEFAULT', 'positionFill': 'DEFAULT', 'reason': 'CLIENT_ORDER'}, 'relatedTransactionIDs': ['392'], 'lastTransactionID': '392'}
 2026-03-24 09:57:04 ERROR    === ORDER PLACEMENT FAILED: EURUSD ===
-2026-03-24 10:03:07 INFO     SYSTEM-X Bot starting up...
-2026-03-24 10:03:07 INFO     Poll thread started
-2026-03-24 10:03:07 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:03:07 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:03:38 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:03:38 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:04:09 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:04:09 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:04:40 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:04:40 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:05:11 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:05:11 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:05:42 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:05:42 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:06:13 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:06:13 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:06:44 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:06:44 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:07:15 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:07:15 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:07:46 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:07:46 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:08:17 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:08:17 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:08:48 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:08:48 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:09:19 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:09:19 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:09:50 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:09:50 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:10:21 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:10:21 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:10:52 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:10:52 INFO     check_closed_trades: fetched 3 trades from OANDA
-2026-03-24 10:11:23 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
-2026-03-24 10:11:23 INFO     check_closed_trades: fetched 3 trades from OANDA

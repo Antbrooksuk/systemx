@@ -74,57 +74,38 @@ class OrderManager:
                 return None
             
             log.info(f"Order response: id={order_id}, status={order_status}, full={result}")
-
-            if order_status == "PENDING" and order_id:
-                log.info(f"Order {order_id} accepted as PENDING")
-                
+            
+            # Only add to active orders if PENDING or FILLED
+            if order_status in ("PENDING", "FILLED"):
                 try:
                     verified_order = self.client.get_order(order_id)
                     if verified_order:
-                        log.info(f"Verified order {order_id} exists in OANDA: {verified_order.get('state')}, price={verified_order.get('price')}")
-                    else:
-                        log.error(f"Order {order_id} not found in OANDA after placement!")
-                except Exception as e:
-                    log.warning(f"Could not verify order {order_id}: {e}")
+                            log.info(f"Verified order {order_id} exists in OANDA: {verified_order.get('state')}, price={verified_order.get('price')}")
+                        else:
+                            log.warning(f"Order {order_id} not found in OANDA after placement!")
+                    except Exception as e:
+                        log.warning(f"Could not verify order {order_id}: {e}")
+                    
+                # Add to active orders if PENDING or FILLED
+                if order_status in ("PENDING", "FILLED") and order_id:
+                    active = ActiveOrder(
+                        oanda_order_id=order_id,
+                        pair=pair,
+                        session=session,
+                        direction=direction,
+                        entry_price=entry_price,
+                        sl_price=sl_price,
+                        tp_price=tp_price,
+                        placed_at=datetime.utcnow(),
+                    )
+                    state.add_order(active)
+                    log.info(f"Limit order tracked: {order_id} {pair} {direction}")
+                    return order_id
                 
-                active = ActiveOrder(
-                    oanda_order_id=order_id,
-                    pair=pair,
-                    session=session,
-                    direction=direction,
-                    entry_price=entry_price,
-                    sl_price=sl_price,
-                    tp_price=tp_price,
-                    placed_at=datetime.utcnow(),
-                )
-                state.add_order(active)
-                log.info(f"Limit order tracked: {order_id} {pair} {direction}")
-                return order_id
-            elif order_status == "FILLED":
-                log.info(f"Order was FILLED immediately - creating trade record")
-                units_val = int(order.get("units", 0))
-                filled_trade = FilledTrade(
-                    pair=pair,
-                    session=session,
-                    direction=direction,
-                    units=abs(units_val),
-                    entry_time=datetime.utcnow(),
-                    entry_price=float(order.get("price", entry_price)),
-                    sl_price=sl_price,
-                    tp_price=tp_price,
-                    exit_time=None,
-                    exit_price=None,
-                    exit_reason="OPEN",
-                    pips=0,
-                    pnl_pct=0,
-                    oanda_trade_id=order_id,
-                )
-                state.add_trade(filled_trade)
-                log.info(f"Immediately filled trade created: {order_id} {pair} {direction}")
-                return order_id
-            else:
-                log.warning(f"Order not accepted: status={order_status}, result={result}")
-                return None
+                # Handle UNKNOWN status - log and wait for next cycle
+                if order_status == "UNKNOWN":
+                    log.warning(f"Order {order_id} status UNKNOWN - will check again next cycle")
+                    return None
 
         except Exception as e:
             log.error(f"Failed to place order: {e}")

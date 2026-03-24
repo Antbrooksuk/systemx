@@ -1,0 +1,56 @@
+/Users/an.brooks/Projects/dash/trading_bot/main.py:145: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+/Users/an.brooks/Projects/dash/trading_bot/main.py:155: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("shutdown")
+INFO:     Started server process [78421]
+INFO:     Waiting for application startup.
+2026-03-24 10:03:07 INFO     SYSTEM-X Bot starting up...
+2026-03-24 10:03:07 INFO     Poll thread started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2026-03-24 10:03:07 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:03:07 INFO     check_closed_trades: fetched 3 trades from OANDA
+INFO:     127.0.0.1:59870 - "GET /health HTTP/1.1" 200 OK
+2026-03-24 10:03:38 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:03:38 INFO     check_closed_trades: fetched 3 trades from OANDA
+INFO:     127.0.0.1:59915 - "GET /status HTTP/1.1" 200 OK
+2026-03-24 10:04:09 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:04:09 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:04:40 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:04:40 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:05:11 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:05:11 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:05:42 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:05:42 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:06:13 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:06:13 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:06:44 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:06:44 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:07:15 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:07:15 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:07:46 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:07:46 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:08:17 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:08:17 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:08:48 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:08:48 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:09:19 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:09:19 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:09:50 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:09:50 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:10:21 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:10:21 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:10:52 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:10:52 INFO     check_closed_trades: fetched 3 trades from OANDA
+2026-03-24 10:11:23 INFO     check_and_manage_orders: 0 pending orders, 0 open trades, 0 tracked orders
+2026-03-24 10:11:23 INFO     check_closed_trades: fetched 3 trades from OANDA

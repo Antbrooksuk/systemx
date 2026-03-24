@@ -8,10 +8,11 @@ import pandas as pd
 import httpx
 from dotenv import load_dotenv
 
-load_dotenv()
-for env_path in [".env.local", "../.env.local", "../../.env.local"]:
-    if os.path.exists(env_path):
-        load_dotenv(env_path)
+cwd = Path.cwd()
+for env_file in [".env", ".env.local"]:
+    env_path = cwd / env_file
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
         break
 
 OANDA_API_KEY = os.getenv("OANDA_API_KEY", "")
@@ -19,7 +20,7 @@ OANDA_ACCOUNT_ID = os.getenv("OANDA_ACCOUNT_ID", "")
 OANDA_ENV = os.getenv("OANDA_ENV", "demo")
 
 if not OANDA_API_KEY:
-    raise ValueError("OANDA_API_KEY not found in environment variables")
+    raise ValueError(f"OANDA_API_KEY not found in environment variables. Checked: {cwd}/.env and {cwd}/.env.local")
 if not OANDA_ACCOUNT_ID:
     raise ValueError("OANDA_ACCOUNT_ID not found in environment variables")
 
