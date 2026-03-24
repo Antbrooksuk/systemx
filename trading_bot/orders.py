@@ -33,6 +33,8 @@ class OrderManager:
             balance = 2000.0
         risk_amount = balance * RISK_PER_TRADE
         units = int(risk_amount / (sl_distance_pips * pip_value))
+        if direction == "SHORT":
+            units = -units
 
         MARGIN_RATE = 0.025
         notional_per_unit = entry_price * pip_value

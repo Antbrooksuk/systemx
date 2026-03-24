@@ -183,12 +183,14 @@ class OANDAClient:
         trade_id: Optional[str] = None,
     ) -> dict:
         units_str = str(units) if units > 0 else str(units)
+        side = "SELL" if units < 0 else "BUY"
 
         order: dict = {
             "order": {
                 "type": order_type,
                 "instrument": self.to_oanda_symbol(instrument),
                 "units": units_str,
+                "side": side,
                 "timeInForce": "GTD",
                 "gtdTime": (datetime.utcnow() + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             }
