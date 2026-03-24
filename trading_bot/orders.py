@@ -6,7 +6,7 @@ from trading_bot.log_config import log
 from mode_b import PAIR_CONFIG, RISK_PER_TRADE
 
 
-MAX_CANDLES = 4
+MAX_CANDLES = 18  # 90 min ÷ 5 min
 
 
 class OrderManager:

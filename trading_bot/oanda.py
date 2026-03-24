@@ -202,6 +202,18 @@ class OANDAClient:
             elif order_type == "STOP":
                 order["order"]["price"] = f"{price:.5f}"
 
+        if sl_price is not None:
+            order["order"]["stopLossOnFill"] = {
+                "price": f"{sl_price:.5f}",
+                "timeInForce": "GTC"
+            }
+
+        if tp_price is not None:
+            order["order"]["takeProfitOnFill"] = {
+                "price": f"{tp_price:.5f}",
+                "timeInForce": "GTC"
+            }
+
         if trade_id:
             order["order"]["tradeID"] = trade_id
             path = f"/v3/accounts/{self.account_id}/orders"

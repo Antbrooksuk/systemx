@@ -84,7 +84,7 @@ RETREAT_BODY_MIN_PCT = 0.20
 RETREAT_BODY_MAX_PCT = 0.50
 SL_OFFSET_PIPS = 3
 MIN_RR = 2.0
-TIME_STOP_CANDLES = 4
+TIME_STOP_CANDLES = 18  # 90 min ÷ 5 min = 18 candles
 RISK_PER_TRADE = 0.01
 
 
@@ -95,7 +95,7 @@ STRATEGY_PRESETS = {
         "ENTRY_AT_EXTREME": True,
         "SL_OFFSET_PIPS": 3,
         "MIN_RR": 2.0,
-        "TIME_STOP_CANDLES": 4,
+        "TIME_STOP_CANDLES": 18,
         "CONFIRM_BODY_MIN_PCT": 0.70,
         "RETREAT_BODY_MIN_PCT": 0.20,
         "RETREAT_BODY_MAX_PCT": 0.50,
@@ -106,7 +106,7 @@ STRATEGY_PRESETS = {
         "ENTRY_AT_EXTREME": True,
         "SL_OFFSET_PIPS": 2,
         "MIN_RR": 2.0,
-        "TIME_STOP_CANDLES": 4,
+        "TIME_STOP_CANDLES": 18,
         "CONFIRM_BODY_MIN_PCT": 0.70,
         "RETREAT_BODY_MIN_PCT": 0.34,
         "RETREAT_BODY_MAX_PCT": 0.50,
@@ -117,7 +117,7 @@ STRATEGY_PRESETS = {
         "ENTRY_AT_EXTREME": True,
         "SL_OFFSET_PIPS": 2,
         "MIN_RR": 1.75,
-        "TIME_STOP_CANDLES": 4,
+        "TIME_STOP_CANDLES": 18,
         "CONFIRM_BODY_MIN_PCT": 0.74,
         "RETREAT_BODY_MIN_PCT": 0.34,
         "RETREAT_BODY_MAX_PCT": 0.50,
