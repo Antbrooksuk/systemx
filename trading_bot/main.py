@@ -94,12 +94,28 @@ def check_session_signals(session):
             if signal["signal"] in ("LONG", "SHORT"):
                 state.current_signal = signal
 
-                has_existing = any(
+                has_pending = any(
                     o.pair == pair
                     for o in list(state.active_orders.values())
                 )
-                if has_existing:
-                    log.info(f"Signal {pair} {signal['signal']} — already has open order")
+                
+                try:
+                    open_trades = client.get_open_trades()
+                    has_open = any(
+                        OANDAClient.from_oanda_symbol(t.get("instrument", "")) == pair
+                        for t in open_trades
+                    )
+                except Exception as e:
+                    log.warning(f"Could not check open trades for idempotency: {e}")
+                    has_open = False
+
+                if has_pending:
+                    log.info(f"Signal {pair} {signal['signal']} — has pending order in state, skipping")
+                    state.current_signal = None
+                    continue
+                    
+                if has_open:
+                    log.info(f"Signal {pair} {signal['signal']} — already has open trade in OANDA, skipping")
                     state.current_signal = None
                     continue
 
@@ -191,6 +207,99 @@ def trades():
 @app.get("/orders")
 def orders():
     return {"orders": state.get_orders()}
+
+
+@app.get("/oanda-trades")
+def oanda_trades():
+    try:
+        closed = client.get_trade_history(count=100)
+        open_trades = client.get_open_trades()
+        pending = client.get_orders()
+        
+        return {
+            "open_trades": [
+                {
+                    "id": t.get("id"),
+                    "instrument": t.get("instrument"),
+                    "pair": OANDAClient.from_oanda_symbol(t.get("instrument", "")),
+                    "units": t.get("currentUnits"),
+                    "direction": "SHORT" if int(t.get("currentUnits", 0)) < 0 else "LONG",
+                    "price": t.get("price"),
+                    "unrealizedPL": t.get("unrealizedPL"),
+                    "stopLoss": t.get("stopLossOrder", {}).get("price") if t.get("stopLossOrder") else None,
+                    "takeProfit": t.get("takeProfitOrder", {}).get("price") if t.get("takeProfitOrder") else None,
+                    "openTime": t.get("openTime"),
+                }
+                for t in open_trades
+            ],
+            "pending_orders": [
+                {
+                    "id": o.get("id"),
+                    "instrument": o.get("instrument"),
+                    "pair": OANDAClient.from_oanda_symbol(o.get("instrument", "")),
+                    "units": o.get("units"),
+                    "direction": "SHORT" if int(o.get("units", 0)) < 0 else "LONG",
+                    "price": o.get("price"),
+                    "state": o.get("state"),
+                    "type": o.get("type"),
+                    "stopLoss": o.get("stopLossOnFill", {}).get("price") if o.get("stopLossOnFill") else None,
+                    "takeProfit": o.get("takeProfitOnFill", {}).get("price") if o.get("takeProfitOnFill") else None,
+                    "createTime": o.get("createTime"),
+                }
+                for o in pending
+            ],
+            "closed_trades": [
+                {
+                    "id": t.get("id"),
+                    "instrument": t.get("instrument"),
+                    "pair": OANDAClient.from_oanda_symbol(t.get("instrument", "")),
+                    "units": t.get("initialUnits"),
+                    "direction": "SHORT" if int(t.get("initialUnits", 0)) < 0 else "LONG",
+                    "price": t.get("price"),
+                    "averageClosePrice": t.get("averageClosePrice"),
+                    "realizedPL": t.get("realizedPL"),
+                    "stopLoss": t.get("stopLossOrder", {}).get("price") if t.get("stopLossOrder") else None,
+                    "takeProfit": t.get("takeProfitOrder", {}).get("price") if t.get("takeProfitOrder") else None,
+                    "openTime": t.get("openTime"),
+                    "closeTime": t.get("closeTime"),
+                }
+                for t in closed
+            ],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/oanda-debug")
+def oanda_debug():
+    try:
+        account = client.get_account()
+        open_trades = client.get_open_trades()
+        pending_orders = client.get_orders()
+        
+        return {
+            "status": "connected",
+            "account_id": client.account_id,
+            "account": {
+                "balance": account.balance,
+                "currency": account.currency,
+                "unrealized_pl": account.unrealized_pl,
+                " NAV": account.equity,
+            },
+            "open_trades_count": len(open_trades),
+            "pending_orders_count": len(pending_orders),
+            "open_trades": open_trades,
+            "pending_orders": pending_orders,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/logs")
+def get_logs(level: str | None = None, limit: int = 50):
+    from trading_bot.log_config import get_recent_logs
+    logs = get_recent_logs(level, limit)
+    return {"logs": logs, "count": len(logs)}
 
 
 

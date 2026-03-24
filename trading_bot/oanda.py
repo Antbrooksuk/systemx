@@ -77,7 +77,16 @@ class OANDAClient:
     def _post(self, path: str, data: Optional[dict] = None) -> dict:
         with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
             resp = client.post(path, json=data)
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                try:
+                    error_body = resp.json()
+                except:
+                    error_body = resp.text
+                raise httpx.HTTPStatusError(
+                    f"OANDA API error {resp.status_code}: {error_body}",
+                    request=resp.request,
+                    response=resp,
+                )
             return resp.json()
 
     def _put(self, path: str, data: dict) -> dict:
@@ -146,6 +155,10 @@ class OANDAClient:
             params={"state": "PENDING"},
         )
         return data.get("orders", [])
+
+    def get_order(self, order_id: str) -> dict | None:
+        data = self._get(f"/v3/accounts/{self.account_id}/orders/{order_id}")
+        return data.get("order")
 
     def get_open_trades(self) -> list[dict]:
         data = self._get(f"/v3/accounts/{self.account_id}/openTrades")

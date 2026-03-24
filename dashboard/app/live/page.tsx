@@ -336,8 +336,70 @@ function buildEquityCurve(historicalTrades: HistoricalTrade[], startingBalance: 
   return equityCurve;
 }
 
+function LogsPanel({ logs }: { logs: { time: string; level: string; message: string }[] }) {
+  const [filter, setFilter] = useState<"all" | "ERROR" | "WARNING">("all");
+  
+  const filteredLogs = logs.filter(l => 
+    filter === "all" || l.level === filter || (filter === "WARNING" && l.level === "WARNING")
+  );
+  
+  const errorLogs = logs.filter(l => l.level === "ERROR");
+  const warnLogs = logs.filter(l => l.level === "WARNING");
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-muted text-xs uppercase tracking-wider">
+          Bot Logs {errorLogs.length > 0 && <span className="text-loss">({errorLogs.length} errors)</span>}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-2 py-1 text-xs rounded ${filter === "all" ? "bg-border text-fg" : "text-muted hover:text-fg"}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter("ERROR")}
+            className={`px-2 py-1 text-xs rounded ${filter === "ERROR" ? "bg-loss/20 text-loss" : "text-muted hover:text-loss"}`}
+          >
+            Errors ({errorLogs.length})
+          </button>
+          <button
+            onClick={() => setFilter("WARNING")}
+            className={`px-2 py-1 text-xs rounded ${filter === "WARNING" ? "bg-warn/20 text-warn" : "text-muted hover:text-warn"}`}
+          >
+            Warnings ({warnLogs.length})
+          </button>
+        </div>
+      </div>
+      <div className="h-48 overflow-y-auto font-mono text-xs space-y-1">
+        {filteredLogs.length === 0 ? (
+          <div className="text-muted text-center py-4">No logs yet</div>
+        ) : (
+          filteredLogs.map((log, i) => (
+            <div key={i} className={`flex gap-2 ${
+              log.level === "ERROR" ? "text-loss" : 
+              log.level === "WARNING" ? "text-warn" : 
+              log.level === "INFO" ? "text-fg" : "text-muted"
+            }`}>
+              <span className="text-muted shrink-0">{log.time}</span>
+              <span className={`shrink-0 w-14 ${
+                log.level === "ERROR" ? "text-loss font-bold" : 
+                log.level === "WARNING" ? "text-warn" : 
+                "text-muted"
+              }`}>{log.level}</span>
+              <span className="truncate" title={log.message}>{log.message}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function LivePage() {
-  const { state, error } = useLive();
+  const { state, error, logs } = useLive();
   const [showEV, setShowEV] = useState(false);
   const [backtestState, setBacktestState] = useState<State | null>(null);
   const [loadingBacktest, setLoadingBacktest] = useState(false);
@@ -539,6 +601,7 @@ export default function LivePage() {
 
         <OrdersTable orders={state?.orders || []} />
         <TradesTable trades={state?.trades || []} />
+        <LogsPanel logs={logs} />
         <TradeLog trades={allTradeEvents} equityCurve={equityCurveData} />
         <SessionBreakdown trades={allTradeEvents} />
       </div>

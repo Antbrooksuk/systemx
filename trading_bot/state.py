@@ -15,8 +15,6 @@ def parse_datetime(dt_str: Optional[str]) -> Optional[datetime]:
     except Exception:
         return None
 
-TRADES_FILE = os.path.join(os.path.dirname(__file__), "trades.json")
-
 
 class OrderStatus(Enum):
     PENDING = "PENDING"
@@ -84,6 +82,7 @@ class BotState:
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def load_from_file(self):
+        TRADES_FILE = os.path.join(os.path.dirname(__file__), "trades.json")
         if os.path.exists(TRADES_FILE):
             try:
                 with open(TRADES_FILE, 'r') as f:
@@ -104,6 +103,7 @@ class BotState:
                 print(f"Failed to load trades from file: {e}")
 
     def save_to_file(self):
+        TRADES_FILE = os.path.join(os.path.dirname(__file__), "trades.json")
         try:
             trades_data = [
                 {
@@ -140,6 +140,9 @@ class BotState:
 
     def add_trade(self, trade: FilledTrade):
         with self.lock:
+            existing = any(t.oanda_trade_id == trade.oanda_trade_id for t in self.filled_trades)
+            if existing:
+                return
             self.filled_trades.append(trade)
             self.total_pnl_pct += trade.pnl_pct
             self.save_to_file()

@@ -6,7 +6,7 @@ from trading_bot.log_config import log
 from mode_b import PAIR_CONFIG, RISK_PER_TRADE
 
 
-MAX_CANDLES = 4
+MAX_CANDLES = 18  # 90 minutes = 18 x 5-min candles
 
 
 class OrderManager:
@@ -29,7 +29,9 @@ class OrderManager:
         try:
             acc = self.client.get_account()
             balance = acc.balance
-        except Exception:
+            log.info(f"Account balance: £{balance}")
+        except Exception as e:
+            log.warning(f"Could not fetch account balance: {e}, using default £2000")
             balance = 2000.0
         risk_amount = balance * RISK_PER_TRADE
         units = int(risk_amount / (sl_distance_pips * pip_value))
@@ -49,6 +51,7 @@ class OrderManager:
         )
 
         try:
+            log.info(f"Sending order to OANDA: {pair} {direction} {units} units at {entry_price}")
             result = self.client.place_order(
                 instrument=pair,
                 units=units,
@@ -58,10 +61,32 @@ class OrderManager:
                 tp_price=tp_price,
             )
 
+            log.info(f"Full OANDA response: {result}")
+            
             order = result.get("orderCreateTransaction", {})
             order_id = str(order.get("id", ""))
+            order_status = order.get("status", "UNKNOWN")
+            
+            if "orderRejectTransaction" in result:
+                reject = result.get("orderRejectTransaction", {})
+                reject_reason = reject.get("rejectReason", "UNKNOWN")
+                log.error(f"Order REJECTED: {reject_reason}, details={reject}")
+                return None
+            
+            log.info(f"Order response: id={order_id}, status={order_status}, full={result}")
 
-            if order_id:
+            if order_status == "PENDING" and order_id:
+                log.info(f"Order {order_id} accepted as PENDING")
+                
+                try:
+                    verified_order = self.client.get_order(order_id)
+                    if verified_order:
+                        log.info(f"Verified order {order_id} exists in OANDA: {verified_order.get('state')}, price={verified_order.get('price')}")
+                    else:
+                        log.error(f"Order {order_id} not found in OANDA after placement!")
+                except Exception as e:
+                    log.warning(f"Could not verify order {order_id}: {e}")
+                
                 active = ActiveOrder(
                     oanda_order_id=order_id,
                     pair=pair,
@@ -73,10 +98,32 @@ class OrderManager:
                     placed_at=datetime.utcnow(),
                 )
                 state.add_order(active)
-                log.info(f"Limit order placed: {order_id} {pair} {direction}")
+                log.info(f"Limit order tracked: {order_id} {pair} {direction}")
+                return order_id
+            elif order_status == "FILLED":
+                log.info(f"Order was FILLED immediately - creating trade record")
+                units_val = int(order.get("units", 0))
+                filled_trade = FilledTrade(
+                    pair=pair,
+                    session=session,
+                    direction=direction,
+                    units=abs(units_val),
+                    entry_time=datetime.utcnow(),
+                    entry_price=float(order.get("price", entry_price)),
+                    sl_price=sl_price,
+                    tp_price=tp_price,
+                    exit_time=None,
+                    exit_price=None,
+                    exit_reason="OPEN",
+                    pips=0,
+                    pnl_pct=0,
+                    oanda_trade_id=order_id,
+                )
+                state.add_trade(filled_trade)
+                log.info(f"Immediately filled trade created: {order_id} {pair} {direction}")
                 return order_id
             else:
-                log.warning(f"No order ID in response: {result}")
+                log.warning(f"Order not accepted: status={order_status}, result={result}")
                 return None
 
         except Exception as e:
@@ -88,19 +135,62 @@ class OrderManager:
         try:
             open_trades = self.client.get_open_trades()
             pending_orders = self.client.get_orders()
+            
+            open_trade_ids = {str(t.get("id")) for t in open_trades}
+            pending_order_ids = {str(o.get("id")) for o in pending_orders}
+            
+            log.info(f"check_and_manage_orders: {len(pending_order_ids)} pending orders, {len(open_trade_ids)} open trades, {len(state.active_orders)} tracked orders")
 
             now = datetime.utcnow()
 
             for order_id, active_order in list(state.active_orders.items()):
                 candles_elapsed = (now - active_order.placed_at).total_seconds() / 300
 
-                order_in_oanda = any(
-                    str(o.get("id")) == order_id for o in pending_orders
-                )
+                order_in_pending = order_id in pending_order_ids
+                order_in_trades = order_id in open_trade_ids
+                
+                log.debug(f"Order {order_id} ({active_order.pair}): pending={order_in_pending}, open={order_in_trades}")
 
-                if not order_in_oanda:
+                if order_in_trades:
+                    log.info(f"Order {order_id} is now an OPEN TRADE - creating FilledTrade record")
+                    trade = next((t for t in open_trades if str(t.get("id")) == order_id), None)
+                    if trade:
+                        units = int(trade.get("currentUnits", 0))
+                        direction = "SHORT" if units < 0 else "LONG"
+                        entry_price = float(trade.get("price", 0))
+                        open_time_str = trade.get("openTime", "")
+                        open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00")) if open_time_str else datetime.utcnow()
+                        
+                        filled = FilledTrade(
+                            pair=active_order.pair,
+                            session=active_order.session,
+                            direction=direction,
+                            units=abs(units),
+                            entry_time=open_time_dt,
+                            entry_price=entry_price,
+                            sl_price=active_order.sl_price,
+                            tp_price=active_order.tp_price,
+                            exit_time=None,
+                            exit_price=None,
+                            exit_reason="OPEN",
+                            pips=0,
+                            pnl_pct=0,
+                            oanda_trade_id=order_id,
+                        )
+                        existing = next(
+                            (t for t in state.filled_trades if t.oanda_trade_id == order_id),
+                            None,
+                        )
+                        if not existing:
+                            state.add_trade(filled)
+                            log.info(f"Created FilledTrade for filled order {order_id} {active_order.pair} {direction}")
+                    
                     state.remove_order(order_id)
-                    log.info(f"Order {order_id} no longer pending — may have filled")
+                    continue
+
+                if not order_in_pending:
+                    log.warning(f"Order {order_id} disappeared but not in open trades - possible rejection, removing from tracking")
+                    state.remove_order(order_id)
                     continue
 
                 if candles_elapsed >= MAX_CANDLES:
@@ -218,7 +308,12 @@ class OrderManager:
     def check_closed_trades(self, session: str = "live") -> list[FilledTrade]:
         recent_closed: list[FilledTrade] = []
         try:
-            history = self.client.get_trade_history(count=50)
+            history = self.client.get_trade_history(count=100)
+            log.info(f"check_closed_trades: fetched {len(history)} trades from OANDA")
+            
+            if not history:
+                log.info("No closed trades in OANDA history")
+                return []
 
             for trade in history:
                 trade_id = str(trade.get("id"))
