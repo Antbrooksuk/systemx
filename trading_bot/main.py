@@ -35,7 +35,35 @@ running = True
 poll_thread: threading.Thread | None = None
 
 
+SESSION_REPORT_FILE = Path(__file__).parent / "session_reports.txt"
+
+def write_session_report():
+    """Write permanent session report to file"""
+    try:
+        with open(SESSION_REPORT_FILE, "a") as f:
+            f.write(f"\n{'='*60}\n")
+            f.write(f"SESSION REPORT - {datetime.utcnow().isoformat()}\n")
+            f.write(f"{'='*60}\n")
+            
+            current_session = get_current_session()
+            f.write(f"Current Session: {current_session.name if current_session else 'None'}\n")
+            f.write(f"Session Traded Pairs: {list(state.session_traded_pairs)}\n\n")
+            
+            f.write(f"Filled Trades: {len(state.filled_trades)}\n")
+            for t in state.filled_trades[-20:]:
+                f.write(f"  - {t.pair} {t.direction} {t.exit_reason} pnl={t.pnl_pct:.2f}%\n")
+            
+            f.write(f"\nActive Orders: {len(state.active_orders)}\n")
+            for oid, o in state.active_orders.items():
+                f.write(f"  - {oid}: {o.pair} {o.direction} placed={o.placed_at.isoformat()}\n")
+            
+            f.write(f"\nBot Uptime: {int((datetime.utcnow() - state.started_at).total_seconds())}s\n")
+    except Exception as e:
+        log.error(f"Failed to write session report: {e}")
+
+
 def poll_loop():
+    last_session = None
     while running:
         try:
             current_session = get_current_session()
@@ -45,6 +73,12 @@ def poll_loop():
 
             if current_session:
                 check_session_signals(current_session)
+                
+            # Check if session ended
+            if last_session and current_session is None:
+                write_session_report()
+                
+            last_session = current_session
 
         except Exception as e:
             log.error(f"Poll error: {e}")
@@ -54,22 +88,32 @@ def poll_loop():
 
 def check_session_signals(session):
     from trading_bot.state import FilledTrade
+    
+    log.info(f"=== SESSION CHECK: {session.name} ===")
+    
     if getattr(state, "_last_checked_session", None) != session.name:
         state.checked_pairs = set()
         state._last_checked_session = session.name
         state.clear_session_trades()
+        log.info(f"=== NEW SESSION START: {session.name} ===")
+    
     for pair in session.pairs:
+        log.info(f"--- Checking {pair} ---")
         try:
             df = client.get_candles_df(pair, count=50)
             if df.empty:
+                log.warning(f"{pair}: No candle data")
                 continue
 
             pd_candles = df.iloc[:-5].copy() if len(df) > 5 else df.copy().iloc[:0]
             session_candles = df.copy()
 
             signal = run_signal(pd_candles, session_candles, pair)
+            
+            log.info(f"{pair}: Signal={signal['signal']}, reason={signal.get('reason', 'N/A')}")
 
             if signal["signal"] == "SKIP":
+                log.info(f"{pair}: SKIPPED - {signal.get('reason', 'no signal')}")
                 already_recorded = any(
                     t.pair == pair and t.exit_reason == "SKIP"
                     for t in state.filled_trades
@@ -86,7 +130,7 @@ def check_session_signals(session):
                         tp_price=0,
                         exit_time=datetime.utcnow(),
                         exit_price=0,
-                        exit_reason="SKIP",
+                        exit_reason=signal.get('reason', 'SKIP'),
                         pips=0,
                         pnl_pct=0,
                         oanda_trade_id=f"skip_{pair}_{session.name}",
@@ -94,13 +138,14 @@ def check_session_signals(session):
 
             if signal["signal"] in ("LONG", "SHORT"):
                 state.current_signal = signal
+                log.info(f"{pair}: {signal['signal']} at {signal.get('entry_formatted', 'N/A')} (SL:{signal.get('sl_formatted', 'N/A')} TP:{signal.get('tp_formatted', 'N/A')})")
 
                 has_existing = any(
                     o.pair == pair
                     for o in list(state.active_orders.values())
                 )
                 if has_existing:
-                    log.info(f"Signal {pair} {signal['signal']} — already has open order")
+                    log.info(f"{pair}: SKIP - already has open order in state")
                     state.current_signal = None
                     continue
 
@@ -115,28 +160,29 @@ def check_session_signals(session):
                         OANDAClient.from_oanda_symbol(o.get("instrument", "")) == pair
                         for o in pending_orders
                     )
+                    log.info(f"{pair}: OANDA check - has_open={has_open}, has_pending={has_pending_oanda}")
                 except Exception as e:
                     log.warning(f"Could not check open trades for idempotency: {e}")
                     has_open = False
                     has_pending_oanda = False
 
                 if has_pending_oanda:
-                    log.info(f"Signal {pair} {signal['signal']} — has pending order in OANDA, skipping")
+                    log.info(f"{pair}: SKIP - pending order exists in OANDA")
                     state.current_signal = None
                     continue
                     
                 if has_open:
-                    log.info(f"Signal {pair} {signal['signal']} — already has open trade in OANDA, skipping")
+                    log.info(f"{pair}: SKIP - open trade exists in OANDA")
                     state.mark_pair_traded(session.name, pair)
                     state.current_signal = None
                     continue
                     
                 if state.has_pair_traded(session.name, pair):
-                    log.info(f"Signal {pair} {signal['signal']} — already traded in this session, skipping")
+                    log.info(f"{pair}: SKIP - already traded in session {session.name}")
                     state.current_signal = None
                     continue
 
-                log.info(f"=== PLACING ORDER: {pair} {signal['direction']} entry={signal['entry']} ===")
+                log.info(f"=== ORDER PLACED: {pair} {signal['direction']} entry={signal['entry']} SL={signal['sl']} TP={signal['tp']} ===")
                 order_id = order_manager.place_entry(
                     pair=pair,
                     direction=signal["direction"],
@@ -146,11 +192,11 @@ def check_session_signals(session):
                     session=session.name,
                 )
                 if order_id:
-                    log.info(f"=== ORDER PLACED SUCCESS: {order_id} ===")
+                    log.info(f"=== ORDER SUCCESS: {order_id} {pair} {signal['direction']} ===")
                     state.mark_pair_traded(session.name, pair)
                     state.current_signal = None
                 else:
-                    log.error(f"=== ORDER PLACEMENT FAILED: {pair} ===")
+                    log.error(f"=== ORDER FAILED: {pair} ===")
 
         except Exception as e:
             log.error(f"Signal check error for {pair}: {e}")
@@ -210,6 +256,21 @@ def status():
         account_info = None
         total_pnl_pct = 0.0
 
+    # Get session trade summary
+    session_summary = {}
+    for trade in state.filled_trades:
+        if trade.session not in session_summary:
+            session_summary[trade.session] = {"trades": 0, "skips": 0, "wins": 0, "losses": 0, "pnl": 0.0}
+        if trade.direction == "SKIP":
+            session_summary[trade.session]["skips"] += 1
+        else:
+            session_summary[trade.session]["trades"] += 1
+            if trade.pnl_pct > 0:
+                session_summary[trade.session]["wins"] += 1
+            else:
+                session_summary[trade.session]["losses"] += 1
+            session_summary[trade.session]["pnl"] += trade.pnl_pct
+
     return {
         "session": session_info,
         "active_orders": len(state.active_orders),
@@ -218,7 +279,75 @@ def status():
         "uptime_seconds": int((datetime.utcnow() - state.started_at).total_seconds()),
         "account": account_info,
         "current_signal": state.current_signal,
+        "session_traded_pairs": list(state.session_traded_pairs),
+        "session_summary": session_summary,
     }
+
+
+@app.get("/report")
+def full_report():
+    """Full detailed report of all trades, skips, and decisions"""
+    
+    # Get OANDA state
+    try:
+        oanda_orders = client.get_orders()
+        oanda_trades = client.get_open_trades()
+    except:
+        oanda_orders = []
+        oanda_trades = []
+    
+    # Build detailed trade list
+    trades_detail = []
+    for t in state.filled_trades:
+        trades_detail.append({
+            "pair": t.pair,
+            "session": t.session,
+            "direction": t.direction,
+            "entry_price": t.entry_price,
+            "exit_price": t.exit_price,
+            "exit_reason": t.exit_reason,
+            "pips": t.pips,
+            "pnl_pct": t.pnl_pct,
+            "entry_time": t.entry_time.isoformat() if t.entry_time else None,
+            "exit_time": t.exit_time.isoformat() if t.exit_time else None,
+        })
+    
+    # Recent activity log
+    recent_logs = []
+    try:
+        log_path = Path(__file__).parent / "logs" / "bot.log"
+        if log_path.exists():
+            with open(log_path) as f:
+                lines = f.readlines()
+                recent_logs = [l.strip() for l in lines[-100:]]
+    except:
+        pass
+    
+    return {
+        "bot_uptime_seconds": int((datetime.utcnow() - state.started_at).total_seconds()),
+        "current_session": get_current_session().name if get_current_session() else None,
+        "session_traded_pairs": list(state.session_traded_pairs),
+        "active_orders_in_state": len(state.active_orders),
+        "pending_orders_in_oanda": len(oanda_orders),
+        "open_trades_in_oanda": len(oanda_trades),
+        "trades_history": trades_detail,
+        "recent_logs": recent_logs,
+    }
+
+
+@app.get("/session-reports")
+def get_session_reports():
+    """Get permanent session reports as text"""
+    try:
+        if SESSION_REPORT_FILE.exists():
+            with open(SESSION_REPORT_FILE, "r") as f:
+                content = f.read()
+        else:
+            content = "No session reports yet."
+    except Exception as e:
+        content = f"Error reading reports: {e}"
+    
+    return {"reports": content}
 
 
 @app.get("/trades")

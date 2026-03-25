@@ -80,3 +80,4 @@ dashboard/.next/
 # Bot trades (local only)
 trading_bot/trades.json
 trading_bot/bot.log
+trading_bot/session_reports.txt

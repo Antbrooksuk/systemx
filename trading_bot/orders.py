@@ -92,6 +92,8 @@ class OrderManager:
             open_trades = self.client.get_open_trades()
             pending_orders = self.client.get_orders()
 
+            log.info(f"=== ORDER CHECK: {len(pending_orders)} pending, {len(open_trades)} open ===")
+
             now = datetime.utcnow()
 
             for order_id, active_order in list(state.active_orders.items()):
@@ -104,10 +106,10 @@ class OrderManager:
 
                 if not order_in_oanda:
                     if seconds_elapsed < 60:
-                        log.info(f"Order {order_id} still pending (just placed {seconds_elapsed:.0f}s ago)")
+                        log.info(f"Order {order_id} ({active_order.pair}) still pending ({seconds_elapsed:.0f}s ago)")
                         continue
                     state.remove_order(order_id)
-                    log.info(f"Order {order_id} no longer pending — may have filled")
+                    log.info(f"Order {order_id} ({active_order.pair}) filled/removed")
                     continue
 
                 if candles_elapsed >= MAX_CANDLES:
@@ -126,6 +128,9 @@ class OrderManager:
                 oanda_pair = trade.get("instrument")
                 pair = OANDA.from_oanda_symbol(oanda_pair)
                 units = int(trade.get("currentUnits", 0))
+                
+                log.info(f"=== TRADE MONITOR: {trade_id} {pair} units={units} ===")
+                
                 open_time_str = trade.get("openTime", "")
                 if open_time_str:
                     open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00"))
