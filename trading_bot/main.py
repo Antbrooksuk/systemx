@@ -57,6 +57,7 @@ def check_session_signals(session):
     if getattr(state, "_last_checked_session", None) != session.name:
         state.checked_pairs = set()
         state._last_checked_session = session.name
+        state.clear_session_trades()
     for pair in session.pairs:
         try:
             df = client.get_candles_df(pair, count=50)
@@ -126,6 +127,12 @@ def check_session_signals(session):
                     
                 if has_open:
                     log.info(f"Signal {pair} {signal['signal']} — already has open trade in OANDA, skipping")
+                    state.mark_pair_traded(session.name, pair)
+                    state.current_signal = None
+                    continue
+                    
+                if state.has_pair_traded(session.name, pair):
+                    log.info(f"Signal {pair} {signal['signal']} — already traded in this session, skipping")
                     state.current_signal = None
                     continue
 
@@ -140,6 +147,7 @@ def check_session_signals(session):
                 )
                 if order_id:
                     log.info(f"=== ORDER PLACED SUCCESS: {order_id} ===")
+                    state.mark_pair_traded(session.name, pair)
                     state.current_signal = None
                 else:
                     log.error(f"=== ORDER PLACEMENT FAILED: {pair} ===")

@@ -80,6 +80,19 @@ class BotState:
     signal_results: list[SignalResult] = field(default_factory=list)
     checked_pairs: set[str] = field(default_factory=set)
     lock: threading.Lock = field(default_factory=threading.Lock)
+    session_traded_pairs: set[str] = field(default_factory=set)
+
+    def mark_pair_traded(self, session: str, pair: str):
+        with self.lock:
+            self.session_traded_pairs.add(f"{session}_{pair}")
+
+    def has_pair_traded(self, session: str, pair: str) -> bool:
+        with self.lock:
+            return f"{session}_{pair}" in self.session_traded_pairs
+
+    def clear_session_trades(self):
+        with self.lock:
+            self.session_traded_pairs.clear()
 
     def load_from_file(self):
         TRADES_FILE = os.path.join(os.path.dirname(__file__), "trades.json")

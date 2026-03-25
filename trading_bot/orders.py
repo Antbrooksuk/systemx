@@ -1,5 +1,6 @@
 """Order management — places, monitors, and manages limit orders."""
 from datetime import datetime
+import pytz
 from trading_bot.oanda import OANDAClient, OANDAClient as OANDA
 from trading_bot.state import state, ActiveOrder, FilledTrade
 from trading_bot.log_config import log
@@ -94,13 +95,17 @@ class OrderManager:
             now = datetime.utcnow()
 
             for order_id, active_order in list(state.active_orders.items()):
-                candles_elapsed = (now - active_order.placed_at).total_seconds() / 300
+                seconds_elapsed = (now - active_order.placed_at).total_seconds()
+                candles_elapsed = seconds_elapsed / 300
 
                 order_in_oanda = any(
                     str(o.get("id")) == order_id for o in pending_orders
                 )
 
                 if not order_in_oanda:
+                    if seconds_elapsed < 60:
+                        log.info(f"Order {order_id} still pending (just placed {seconds_elapsed:.0f}s ago)")
+                        continue
                     state.remove_order(order_id)
                     log.info(f"Order {order_id} no longer pending — may have filled")
                     continue
@@ -122,8 +127,12 @@ class OrderManager:
                 pair = OANDA.from_oanda_symbol(oanda_pair)
                 units = int(trade.get("currentUnits", 0))
                 open_time_str = trade.get("openTime", "")
-                open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00")) if open_time_str else datetime.utcnow()
-                candles_open = (datetime.utcnow() - open_time_dt).total_seconds() / 300
+                if open_time_str:
+                    open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00"))
+                    now_aware = datetime.utcnow().replace(tzinfo=pytz.UTC)
+                    candles_open = (now_aware - open_time_dt).total_seconds() / 300
+                else:
+                    candles_open = 0
 
                 pip_value = PAIR_CONFIG[pair]["pip_value"]
                 direction = "SHORT" if units < 0 else "LONG"
