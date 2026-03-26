@@ -1,6 +1,5 @@
 """Order management — places, monitors, and manages limit orders."""
-from datetime import datetime
-import pytz
+from datetime import datetime, timezone
 from trading_bot.oanda import OANDAClient, OANDAClient as OANDA
 from trading_bot.state import state, ActiveOrder, FilledTrade
 from trading_bot.log_config import log
@@ -134,7 +133,7 @@ class OrderManager:
                 open_time_str = trade.get("openTime", "")
                 if open_time_str:
                     open_time_dt = datetime.fromisoformat(open_time_str.replace("Z", "+00:00"))
-                    now_aware = datetime.utcnow().replace(tzinfo=pytz.UTC)
+                    now_aware = datetime.now(timezone.utc)
                     candles_open = (now_aware - open_time_dt).total_seconds() / 300
                 else:
                     candles_open = 0
