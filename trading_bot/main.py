@@ -37,25 +37,27 @@ poll_thread: threading.Thread | None = None
 
 SESSION_REPORT_FILE = Path(__file__).parent / "session_reports.txt"
 
-def write_session_report():
+def write_session_report(session_name: str):
     """Write permanent session report to file"""
     try:
+        session_trades = [t for t in state.filled_trades if t.session == session_name]
+        
+        wins = [t for t in session_trades if t.pnl_pct > 0]
+        losses = [t for t in session_trades if t.pnl_pct < 0]
+        skips = [t for t in session_trades if t.direction == "SKIP"]
+        
+        total_pnl = sum(t.pnl_pct for t in session_trades)
+        
         with open(SESSION_REPORT_FILE, "a") as f:
             f.write(f"\n{'='*60}\n")
-            f.write(f"SESSION REPORT - {datetime.utcnow().isoformat()}\n")
+            f.write(f"SESSION REPORT - {session_name} - {datetime.utcnow().isoformat()}\n")
             f.write(f"{'='*60}\n")
             
-            current_session = get_current_session()
-            f.write(f"Current Session: {current_session.name if current_session else 'None'}\n")
-            f.write(f"Session Traded Pairs: {list(state.session_traded_pairs)}\n\n")
+            f.write(f"Trades: {len(session_trades)} (wins: {len(wins)}, losses: {len(losses)}, skips: {len(skips)})\n")
+            f.write(f"P&L: {total_pnl:.2f}%\n\n")
             
-            f.write(f"Filled Trades: {len(state.filled_trades)}\n")
-            for t in state.filled_trades[-20:]:
+            for t in session_trades:
                 f.write(f"  - {t.pair} {t.direction} {t.exit_reason} pnl={t.pnl_pct:.2f}%\n")
-            
-            f.write(f"\nActive Orders: {len(state.active_orders)}\n")
-            for oid, o in state.active_orders.items():
-                f.write(f"  - {oid}: {o.pair} {o.direction} placed={o.placed_at.isoformat()}\n")
             
             f.write(f"\nBot Uptime: {int((datetime.utcnow() - state.started_at).total_seconds())}s\n")
     except Exception as e:
@@ -76,7 +78,7 @@ def poll_loop():
                 
             # Check if session ended
             if last_session and current_session is None:
-                write_session_report()
+                write_session_report(last_session.name)
                 
             last_session = current_session
 
