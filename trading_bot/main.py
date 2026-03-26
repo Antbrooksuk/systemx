@@ -13,7 +13,7 @@ import pandas as pd
 
 from trading_bot.oanda import OANDAClient
 from trading_bot.orders import OrderManager
-from trading_bot.session import get_current_session, session_seconds_remaining, candle_countdown
+from trading_bot.session import get_current_session, session_seconds_remaining, candle_countdown, get_session_start_dt, get_session_end_dt
 from trading_bot.state import state, BotState
 from trading_bot.log_config import log
 
@@ -97,18 +97,39 @@ def check_session_signals(session):
         state.clear_session_trades()
         log.info(f"=== NEW SESSION START: {session.name} ===")
     
+    now = datetime.utcnow()
+    session_start_dt = get_session_start_dt(session, now)
+    
     for pair in session.pairs:
         log.info(f"--- Checking {pair} ---")
         try:
-            df = client.get_candles_df(pair, count=50)
+            df = client.get_candles_df(pair, count=200, granularity="M5")
             if df.empty:
                 log.warning(f"{pair}: No candle data")
                 continue
 
-            pd_candles = df.iloc[:-5].copy() if len(df) > 5 else df.copy().iloc[:0]
-            session_candles = df.copy()
+            df = df.sort_index()
+            
+            session_candles = df[df.index >= session_start_dt].copy()
+            
+            pd_candles = df[(df.index < session_start_dt)].copy()
+            if len(pd_candles) < 10:
+                log.info(f"{pair}: SKIP - insufficient previous day data")
+                continue
 
-            signal = run_signal(pd_candles, session_candles, pair)
+            if session_candles.empty:
+                log.info(f"{pair}: SKIP - no session candles yet")
+                continue
+
+            session_end_dt = get_session_end_dt(session, now)
+            window_open_candles = session_candles[(session_candles.index >= session_start_dt) & (session_candles.index < session_end_dt)]
+            
+            minutes_since_open = (now - session_start_dt).total_seconds() / 60
+            if minutes_since_open >= 90:
+                log.info(f"{pair}: SKIP - 90-min window expired ({minutes_since_open:.0f} min)")
+                continue
+
+            signal = run_signal(pd_candles, window_open_candles, pair)
             
             log.info(f"{pair}: Signal={signal['signal']}, reason={signal.get('reason', 'N/A')}")
 

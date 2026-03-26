@@ -154,6 +154,23 @@ def pips_to_price(pips: float, pair: str) -> float:
 def price_to_pips(price_diff: float, pair: str) -> float:
     return abs(price_diff / PAIR_CONFIG[pair]["pip_value"])
 
+def check_first_candle_in_range(first_candle: pd.Series, pd_high: float, pd_low: float, pair: str) -> Optional[str]:
+    """
+    PLAN Step 2 & 3: Verify first candle at session open closes within PD range.
+    Returns skip reason if out-of-range, None if in-range.
+    """
+    if first_candle is None or pd_high == 0 or pd_low == 0:
+        return "no_first_candle"
+
+    close = float(first_candle["Close"])
+    open_price = float(first_candle["Open"])
+
+    if close > pd_high or close < pd_low:
+        return "first_candle_out_of_range"
+
+    return None
+
+
 def analyse_setup(
     pd_candles: pd.DataFrame,
     session_candles: pd.DataFrame,
@@ -161,9 +178,10 @@ def analyse_setup(
 ) -> SetupResult:
     """
     Plan-faithful impulse + pullback pattern:
-    1. Strong impulse candle (body >= 70%) moving toward PDH/PDL
-    2. Pullback candle (body >= 20%, <= 50%) that retraces the impulse
-    3. Direction: impulse direction (toward PDH = LONG, toward PDL = SHORT)
+    1. First candle check (Step 2-3): session open candle must close within PD range
+    2. Strong impulse candle (body >= 70%) moving toward PDH/PDL
+    3. Pullback candle (body >= 20%, <= 50%) that retraces the impulse
+    4. Direction: impulse direction (toward PDH = LONG, toward PDL = SHORT)
     """
     if pd_candles.empty or session_candles.empty:
         return SetupResult(signal=Signal.SKIP, skip_reason="no_data", pd_high=0, pd_low=0, direction=None, entry_candle_idx=0)
@@ -179,6 +197,11 @@ def analyse_setup(
 
     if len(session_candles) < 2:
         return SetupResult(signal=Signal.SKIP, skip_reason="no_data", pd_high=pd_high, pd_low=pd_low, direction=None, entry_candle_idx=0)
+
+    first_candle = session_candles.iloc[0]
+    skip_reason = check_first_candle_in_range(first_candle, pd_high, pd_low, pair)
+    if skip_reason:
+        return SetupResult(signal=Signal.SKIP, skip_reason=skip_reason, pd_high=pd_high, pd_low=pd_low, direction=None, entry_candle_idx=0)
 
     for i in range(len(session_candles) - 1):
         imp = session_candles.iloc[i]

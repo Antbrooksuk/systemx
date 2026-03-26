@@ -13,8 +13,8 @@ class Session:
 
 
 SESSIONS = [
-    Session("london", ["EURUSD", "GBPUSD"], time(8, 0), time(10, 0)),
-    Session("ny", ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], time(14, 30), time(16, 30)),
+    Session("london", ["EURUSD", "GBPUSD"], time(8, 0), time(9, 30)),
+    Session("ny", ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], time(14, 30), time(16, 0)),
 ]
 
 
@@ -65,3 +65,19 @@ def candle_countdown(utc_now: datetime) -> int:
     second = utc_now.second
     seconds_into_candle = (minute % 5) * 60 + second
     return 300 - seconds_into_candle
+
+
+def get_session_start_dt(session: Session, utc_now: datetime) -> datetime:
+    """Get today's session start datetime."""
+    if session.name == "london":
+        return utc_now.replace(hour=8, minute=0, second=0, microsecond=0)
+    else:
+        return utc_now.replace(hour=14, minute=30, second=0, microsecond=0)
+
+
+def get_session_end_dt(session: Session, utc_now: datetime) -> datetime:
+    """Get today's session end datetime."""
+    if session.name == "london":
+        return utc_now.replace(hour=10, minute=0, second=0, microsecond=0)
+    else:
+        return utc_now.replace(hour=16, minute=30, second=0, microsecond=0)
