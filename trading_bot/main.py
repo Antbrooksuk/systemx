@@ -100,7 +100,7 @@ def check_session_signals(session):
         log.info(f"=== NEW SESSION START: {session.name} ===")
     
     now = datetime.utcnow()
-    session_start_dt = get_session_start_dt(session, now)
+    session_start_dt = pd.Timestamp(now).tz_localize("UTC")
     
     for pair in session.pairs:
         log.info(f"--- Checking {pair} ---")
@@ -124,11 +124,18 @@ def check_session_signals(session):
                 continue
 
             session_end_dt = get_session_end_dt(session, now)
-            window_open_candles = session_candles[(session_candles.index >= session_start_dt) & (session_candles.index < session_end_dt)]
+            session_end_ts = pd.Timestamp(session_end_dt).tz_localize("UTC")
+            window_open_candles = session_candles[(session_candles.index >= session_start_dt) & (session_candles.index < session_end_ts)]
             
-            minutes_since_open = (now - session_start_dt).total_seconds() / 60
+            now_ts = pd.Timestamp(now).tz_localize("UTC")
+            minutes_since_open = (now_ts - session_start_dt).total_seconds() / 60
+            log.info(f"{pair}: minutes_since_open={minutes_since_open:.1f}, window_end={session_end_ts}")
             if minutes_since_open >= 90:
-                log.info(f"{pair}: SKIP - 90-min window expired ({minutes_since_open:.0f} min)")
+                log.info(f"{pair}: SKIP - 90-min window expired")
+                continue
+
+            if window_open_candles.empty:
+                log.info(f"{pair}: SKIP - no window candles")
                 continue
 
             signal = run_signal(pd_candles, window_open_candles, pair)

@@ -78,6 +78,6 @@ def get_session_start_dt(session: Session, utc_now: datetime) -> datetime:
 def get_session_end_dt(session: Session, utc_now: datetime) -> datetime:
     """Get today's session end datetime."""
     if session.name == "london":
-        return utc_now.replace(hour=10, minute=0, second=0, microsecond=0)
+        return utc_now.replace(hour=9, minute=30, second=0, microsecond=0)
     else:
-        return utc_now.replace(hour=16, minute=30, second=0, microsecond=0)
+        return utc_now.replace(hour=16, minute=0, second=0, microsecond=0)
