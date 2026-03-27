@@ -33,7 +33,8 @@ class OrderManager:
         except Exception:
             balance = 2000.0
         risk_amount = balance * RISK_PER_TRADE
-        units_from_risk = int(risk_amount / (sl_distance_pips * pip_value))
+        gbp_per_pip_per_unit = PAIR_CONFIG[pair]["gbp_per_pip"] / 1000.0
+        units_from_risk = int(risk_amount / (sl_distance_pips * gbp_per_pip_per_unit))
         
         max_units_by_margin = int(balance * 20 / entry_price)
         
@@ -44,15 +45,25 @@ class OrderManager:
             return None
         
         if units < units_from_risk:
-            actual_risk_pct = (units * sl_distance_pips * pip_value) / balance * 100
+            actual_risk_pct = (units * sl_distance_pips * gbp_per_pip_per_unit) / balance * 100
             log.warning(f"Margin limited {pair}: requested {units_from_risk} units, using {units} units ({actual_risk_pct:.2f}% risk)")
         
         if direction == "SHORT":
             units = -units
 
+        spread_value = PAIR_CONFIG[pair]["spread_pips"] * pip_value
+        sl_slippage_value = 0.3 * pip_value
+
+        if direction == "LONG":
+            order_sl = sl_price - spread_value - sl_slippage_value
+            order_tp = tp_price + spread_value
+        else:
+            order_sl = sl_price + spread_value + sl_slippage_value
+            order_tp = tp_price - spread_value
+
         log.info(
             f"PLACING LIMIT {direction} {pair}: "
-            f"entry={pip_str % entry_price} sl={pip_str % sl_price} tp={pip_str % tp_price} units={abs(units)}"
+            f"entry={pip_str % entry_price} sl={pip_str % order_sl} tp={pip_str % order_tp} units={abs(units)}"
         )
 
         max_attempts = 5
@@ -63,8 +74,8 @@ class OrderManager:
                     units=units,
                     order_type="LIMIT",
                     price=entry_price,
-                    sl_price=sl_price,
-                    tp_price=tp_price,
+                    sl_price=order_sl,
+                    tp_price=order_tp,
                 )
 
                 order = result.get("orderCreateTransaction", {})
@@ -77,13 +88,13 @@ class OrderManager:
                         session=session,
                         direction=direction,
                         entry_price=entry_price,
-                        sl_price=sl_price,
-                        tp_price=tp_price,
+                        sl_price=order_sl,
+                        tp_price=order_tp,
                         placed_at=datetime.utcnow(),
                     )
                     state.add_order(active)
                     if attempt > 0:
-                        actual_risk_pct = (abs(units) * sl_distance_pips * pip_value) / balance * 100
+                        actual_risk_pct = (abs(units) * sl_distance_pips * gbp_per_pip_per_unit) / balance * 100
                         log.warning(f"Order placed after {attempt + 1} attempts with reduced size: {abs(units)} units ({actual_risk_pct:.2f}% risk)")
                     else:
                         log.info(f"Limit order placed: {order_id} {pair} {direction}")
@@ -213,42 +224,6 @@ class OrderManager:
                         continue
                     except Exception as e:
                         log.error(f"Failed to time stop trade {trade_id}: {e}")
-                try:
-                    acc = self.client.get_account()
-                    balance = acc.balance
-                except Exception:
-                    balance = 100000.0
-                pnl_pct = unrealized_pl / balance * 100 if balance > 0 else 0
-
-                filled = FilledTrade(
-                    pair=pair,
-                    session=session,
-                    direction=direction,
-                    units=abs(units),
-                    entry_time=open_time_dt,
-                    entry_price=entry_price,
-                    sl_price=sl_price,
-                    tp_price=tp_price,
-                    exit_time=None,
-                    exit_price=None,
-                    exit_reason="OPEN",
-                    pips=round(abs(unrealized_pl) / (abs(units) * pip_value), 1),
-                    pnl_pct=round(pnl_pct, 4),
-                    oanda_trade_id=trade_id,
-                )
-
-                existing = next(
-                    (t for t in state.filled_trades if t.oanda_trade_id == trade_id),
-                    None,
-                )
-                if not existing:
-                    state.add_trade(filled)
-                    log.info(
-                        f"TRADE OPENED: {trade_id} {pair} {direction} "
-                        f"entry={entry_price:.5f} unrealized={unrealized_pl:.2f}"
-                    )
-
-                completed.append(filled)
 
         except Exception as e:
             log.error(f"Error checking orders: {e}")

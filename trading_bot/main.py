@@ -105,7 +105,7 @@ def check_session_signals(session):
     for pair in session.pairs:
         log.info(f"--- Checking {pair} ---")
         try:
-            df = client.get_candles_df(pair, count=200, granularity="M5")
+            df = client.get_candles_df(pair, count=300, granularity="M5")
             if df.empty:
                 log.warning(f"{pair}: No candle data")
                 continue

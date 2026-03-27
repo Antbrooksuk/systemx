@@ -66,7 +66,7 @@ class OANDAClient:
 
     @staticmethod
     def from_oanda_symbol(oanda_symbol: str) -> str:
-        mapping = {"EUR_USD": "EURUSD", "GBP_USD": "GBPUSD", "USD_JPY": "USDJPY"}
+        mapping = {"EUR_USD": "EURUSD", "GBP_USD": "GBPUSD", "USD_JPY": "USDJPY", "EUR_JPY": "EURJPY"}
         return mapping.get(oanda_symbol, oanda_symbol.replace("_", ""))
 
     def _get(self, path: str, params: Optional[dict] = None) -> dict:
@@ -182,15 +182,16 @@ class OANDAClient:
         tp_price: Optional[float] = None,
         trade_id: Optional[str] = None,
     ) -> dict:
-        units_str = str(units) if units > 0 else str(units)
-        side = "SELL" if units < 0 else "BUY"
+        units_str = str(units)
+
+        oanda_symbol = self.to_oanda_symbol(instrument)
+        price_fmt = "%.3f" if "JPY" in oanda_symbol else "%.5f"
 
         order: dict = {
             "order": {
                 "type": order_type,
-                "instrument": self.to_oanda_symbol(instrument),
+                "instrument": oanda_symbol,
                 "units": units_str,
-                "side": side,
                 "timeInForce": "GTD",
                 "gtdTime": (datetime.utcnow() + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             }
@@ -198,19 +199,19 @@ class OANDAClient:
 
         if price is not None:
             if order_type == "LIMIT":
-                order["order"]["price"] = f"{price:.5f}"
+                order["order"]["price"] = price_fmt % price
             elif order_type == "STOP":
-                order["order"]["price"] = f"{price:.5f}"
+                order["order"]["price"] = price_fmt % price
 
         if sl_price is not None:
             order["order"]["stopLossOnFill"] = {
-                "price": f"{sl_price:.5f}",
+                "price": price_fmt % sl_price,
                 "timeInForce": "GTC"
             }
 
         if tp_price is not None:
             order["order"]["takeProfitOnFill"] = {
-                "price": f"{tp_price:.5f}",
+                "price": price_fmt % tp_price,
                 "timeInForce": "GTC"
             }
 
