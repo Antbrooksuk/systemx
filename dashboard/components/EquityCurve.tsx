@@ -73,7 +73,7 @@ export function EquityCurve({ data, evData, showEV = false }: EquityCurveProps) 
         )}
       </div>
       <ResponsiveContainer width="100%" height={500}>
-        <AreaChart data={combinedData}>
+        <AreaChart data={combinedData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <XAxis
             dataKey="date"
             stroke="#737373"
@@ -151,12 +151,14 @@ export function EquityCurve({ data, evData, showEV = false }: EquityCurveProps) 
               />
             </>
           )}
-          <Line
+          <Area
             type="monotone"
             dataKey="equity"
             stroke="#22c55e"
+            fill="#22c55e"
+            fillOpacity={0.1}
             strokeWidth={2}
-            dot={false}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

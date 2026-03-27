@@ -85,7 +85,7 @@ RETREAT_BODY_MAX_PCT = 0.50
 SL_OFFSET_PIPS = 3
 MIN_RR = 2.0
 TIME_STOP_CANDLES = 18  # 90 min ÷ 5 min = 18 candles
-RISK_PER_TRADE = 0.01
+RISK_PER_TRADE = 0.0075
 
 
 STRATEGY_PRESETS = {
@@ -155,19 +155,6 @@ def price_to_pips(price_diff: float, pair: str) -> float:
     return abs(price_diff / PAIR_CONFIG[pair]["pip_value"])
 
 def check_first_candle_in_range(first_candle: pd.Series, pd_high: float, pd_low: float, pair: str) -> Optional[str]:
-    """
-    PLAN Step 2 & 3: Verify first candle at session open closes within PD range.
-    Returns skip reason if out-of-range, None if in-range.
-    """
-    if first_candle is None or pd_high == 0 or pd_low == 0:
-        return "no_first_candle"
-
-    close = float(first_candle["Close"])
-    open_price = float(first_candle["Open"])
-
-    if close > pd_high or close < pd_low:
-        return "first_candle_out_of_range"
-
     return None
 
 

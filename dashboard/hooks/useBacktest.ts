@@ -15,7 +15,7 @@ export interface Strategy {
   description: string;
 }
 
-const RISK_OPTIONS = [0.005, 0.01, 0.015, 0.02];
+const RISK_OPTIONS = [0.005, 0.0075, 0.01, 0.015, 0.02, 0.03];
 const CAPITAL_OPTIONS = [1000, 2000, 3000, 5000, 10000];
 
 export { RISK_OPTIONS, CAPITAL_OPTIONS };
@@ -57,12 +57,17 @@ export function useBacktest() {
 
   const fetchStrategies = useCallback(async () => {
     try {
-      const [stratData, yearsData] = await Promise.all([getStrategies(), getYears()]);
-      const list = Object.entries(stratData).map(([key, cfg]: [string, any]) => ({
-        key,
-        label: cfg.label,
-        description: cfg.description,
-      }));
+      const [stratData, yearsData] = await Promise.all([
+        getStrategies(),
+        getYears(),
+      ]);
+      const list = Object.entries(stratData).map(
+        ([key, cfg]: [string, any]) => ({
+          key,
+          label: cfg.label,
+          description: cfg.description,
+        }),
+      );
       setStrategies(list);
       setAvailableYears(yearsData.years || []);
     } catch {

@@ -34,19 +34,11 @@ class OrderManager:
             balance = 2000.0
         risk_amount = balance * RISK_PER_TRADE
         gbp_per_pip_per_unit = PAIR_CONFIG[pair]["gbp_per_pip"] / 1000.0
-        units_from_risk = int(risk_amount / (sl_distance_pips * gbp_per_pip_per_unit))
-        
-        max_units_by_margin = int(balance * 20 / entry_price)
-        
-        units = min(units_from_risk, max_units_by_margin)
+        units = int(risk_amount / (sl_distance_pips * gbp_per_pip_per_unit))
         
         if units == 0:
-            log.warning(f"Balance too small for 1% risk on {pair}: £{balance}, SL distance {sl_distance_pips:.1f} pips, max margin units: {max_units_by_margin}")
+            log.warning(f"Balance too small for 1% risk on {pair}: £{balance}, SL distance {sl_distance_pips:.1f} pips")
             return None
-        
-        if units < units_from_risk:
-            actual_risk_pct = (units * sl_distance_pips * gbp_per_pip_per_unit) / balance * 100
-            log.warning(f"Margin limited {pair}: requested {units_from_risk} units, using {units} units ({actual_risk_pct:.2f}% risk)")
         
         if direction == "SHORT":
             units = -units
