@@ -74,6 +74,6 @@ systemctl restart systemx-bot
 ## Strategy
 
 - Mode X-Plus: 64.4% WR, 2R, 2-pip SL, 4-candle time stop
-- London: 08:00-10:00 UTC (EURUSD, GBPUSD)
-- New York: 14:30-16:30 UTC (EURUSD, GBPUSD, USDJPY)
+- London: 08:00-09:30 UTC (EURUSD, GBPUSD)
+- New York: 14:30-16:00 UTC (EURUSD, GBPUSD, USDJPY)
 - Spread modeled: EURUSD 0.6pip, GBPUSD 1.2pip, USDJPY 0.7pip

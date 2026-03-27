@@ -8,7 +8,7 @@ Three modes configured via constants below:
 
 Core logic:
   1. PDH/PDL = previous day's 24h high/low
-  2. London 08:00-10:00 UTC, NY 14:30-16:30 UTC
+  2. London 08:00-09:30 UTC, NY 14:30-16:00 UTC
   3. Impulse candle (body >= 70%) pushing toward PDH/PDL
   4. Pullback candle (body 20-50%) that retraces the impulse
   5. Entry at pullback EXTREME (low for LONG, high for SHORT)

@@ -32,10 +32,10 @@ Define **two daily windows** per pair:
 
 - **London session window:**
   - Start: `08:00`
-  - End: `10:00`
+  - End: `09:30`
 - **New York session window:**
   - Start: `14:30`
-  - End: `16:30`
+  - End: `16:00`
 
 Only trades **opened** within these windows are allowed.
 

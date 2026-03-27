@@ -1,5 +1,6 @@
 """Order management — places, monitors, and manages limit orders."""
 from datetime import datetime, timezone
+import httpx
 from trading_bot.oanda import OANDAClient, OANDAClient as OANDA
 from trading_bot.state import state, ActiveOrder, FilledTrade
 from trading_bot.log_config import log
@@ -51,43 +52,63 @@ class OrderManager:
 
         log.info(
             f"PLACING LIMIT {direction} {pair}: "
-            f"entry={pip_str % entry_price} sl={pip_str % sl_price} tp={pip_str % tp_price} units={units}"
+            f"entry={pip_str % entry_price} sl={pip_str % sl_price} tp={pip_str % tp_price} units={abs(units)}"
         )
 
-        try:
-            result = self.client.place_order(
-                instrument=pair,
-                units=units,
-                order_type="LIMIT",
-                price=entry_price,
-                sl_price=sl_price,
-                tp_price=tp_price,
-            )
-
-            order = result.get("orderCreateTransaction", {})
-            order_id = str(order.get("id", ""))
-
-            if order_id:
-                active = ActiveOrder(
-                    oanda_order_id=order_id,
-                    pair=pair,
-                    session=session,
-                    direction=direction,
-                    entry_price=entry_price,
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            try:
+                result = self.client.place_order(
+                    instrument=pair,
+                    units=units,
+                    order_type="LIMIT",
+                    price=entry_price,
                     sl_price=sl_price,
                     tp_price=tp_price,
-                    placed_at=datetime.utcnow(),
                 )
-                state.add_order(active)
-                log.info(f"Limit order placed: {order_id} {pair} {direction}")
-                return order_id
-            else:
-                log.warning(f"No order ID in response: {result}")
+
+                order = result.get("orderCreateTransaction", {})
+                order_id = str(order.get("id", ""))
+
+                if order_id:
+                    active = ActiveOrder(
+                        oanda_order_id=order_id,
+                        pair=pair,
+                        session=session,
+                        direction=direction,
+                        entry_price=entry_price,
+                        sl_price=sl_price,
+                        tp_price=tp_price,
+                        placed_at=datetime.utcnow(),
+                    )
+                    state.add_order(active)
+                    if attempt > 0:
+                        actual_risk_pct = (abs(units) * sl_distance_pips * pip_value) / balance * 100
+                        log.warning(f"Order placed after {attempt + 1} attempts with reduced size: {abs(units)} units ({actual_risk_pct:.2f}% risk)")
+                    else:
+                        log.info(f"Limit order placed: {order_id} {pair} {direction}")
+                    return order_id
+                else:
+                    log.warning(f"No order ID in response: {result}")
+                    return None
+
+            except httpx.HTTPStatusError as e:
+                error_str = str(e)
+                if "insufficient" in error_str.lower() or "margin" in error_str.lower():
+                    units = int(units / 2)
+                    if abs(units) < 1000:
+                        log.error(f"Failed to place {pair} order: margin insufficient even at {abs(units)} units")
+                        return None
+                    log.warning(f"Margin rejected, retrying {pair} with {abs(units)} units (attempt {attempt + 2})")
+                    continue
+                else:
+                    log.error(f"Failed to place order: {e}")
+                    return None
+            except Exception as e:
+                log.error(f"Failed to place order: {e}")
                 return None
 
-        except Exception as e:
-            log.error(f"Failed to place order: {e}")
-            return None
+        return None
 
     def check_and_manage_orders(self, session: str = "live") -> list[FilledTrade]:
         completed = []

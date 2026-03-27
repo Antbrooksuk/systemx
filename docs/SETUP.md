@@ -7,7 +7,7 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 - **Broker:** OANDA (practice account)
 - **Account:** £100,000 GBP
 - **Pairs:** EURUSD, GBPUSD, USDJPY, EURJPY (EURJPY in backtest bench, pending live)
-- **Sessions:** London 08:00–10:00 UTC, NY 14:30–16:30 UTC
+- **Sessions:** London 08:00–09:30 UTC, NY 14:30–16:00 UTC
 - **Strategy:** Mode X — impulse candle + pullback candle + limit entry + SL/TP + 4-candle time stop
 - **Framework:** Python/FastAPI bot, Next.js dashboard
 
@@ -48,8 +48,8 @@ SYSTEM-X is a forex scalping bot that trades a momentum-pullback pattern during 
 
 | Session | Time (UTC) | Pairs |
 |---|---|---|
-| London | 08:00–10:00 | EURUSD, GBPUSD |
-| NY | 14:30–16:30 | EURUSD, GBPUSD, USDJPY, EURJPY |
+| London | 08:00–09:30 | EURUSD, GBPUSD |
+| NY | 14:30–16:00 | EURUSD, GBPUSD, USDJPY, EURJPY |
 
 ### Order flow
 

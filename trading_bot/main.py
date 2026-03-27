@@ -100,7 +100,7 @@ def check_session_signals(session):
         log.info(f"=== NEW SESSION START: {session.name} ===")
     
     now = datetime.utcnow()
-    session_start_dt = pd.Timestamp(now).tz_localize("UTC")
+    session_start_dt = pd.Timestamp(get_session_start_dt(session, now)).tz_localize("UTC")
     
     for pair in session.pairs:
         log.info(f"--- Checking {pair} ---")

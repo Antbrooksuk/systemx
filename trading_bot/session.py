@@ -1,4 +1,4 @@
-"""Session window timing — London 08:00-10:00, NY 14:30-16:30 UTC."""
+"""Session window timing — London 08:00-09:30, NY 14:30-16:00 UTC."""
 from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Optional
@@ -31,9 +31,9 @@ def get_current_pair(session: Session, utc_now: datetime) -> Optional[str]:
     ny = SESSIONS[1]
 
     london_start = utc_now.replace(hour=8, minute=0, second=0, microsecond=0)
-    london_end = utc_now.replace(hour=10, minute=0, second=0, microsecond=0)
+    london_end = utc_now.replace(hour=9, minute=30, second=0, microsecond=0)
     ny_start = utc_now.replace(hour=14, minute=30, second=0, microsecond=0)
-    ny_end = utc_now.replace(hour=16, minute=30, second=0, microsecond=0)
+    ny_end = utc_now.replace(hour=16, minute=0, second=0, microsecond=0)
 
     if utc_now >= london_start and utc_now < london_end:
         minutes_in = int((utc_now - london_start).total_seconds() / 60)
@@ -54,9 +54,9 @@ def get_current_pair(session: Session, utc_now: datetime) -> Optional[str]:
 
 def session_seconds_remaining(session: Session, utc_now: datetime) -> int:
     if session.name == "london":
-        end = utc_now.replace(hour=10, minute=0, second=0, microsecond=0)
+        end = utc_now.replace(hour=9, minute=30, second=0, microsecond=0)
     else:
-        end = utc_now.replace(hour=16, minute=30, second=0, microsecond=0)
+        end = utc_now.replace(hour=16, minute=0, second=0, microsecond=0)
     return max(0, int((end - utc_now).total_seconds()))
 
 
