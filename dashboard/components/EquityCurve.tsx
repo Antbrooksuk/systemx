@@ -28,8 +28,8 @@ interface EquityCurveProps {
 export function EquityCurve({ data, evData, showEV = false }: EquityCurveProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-lg p-4 h-64 flex items-center justify-center">
-        <div className="text-muted">No data yet</div>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-muted text-xs">No data yet</div>
       </div>
     );
   }
@@ -54,30 +54,13 @@ export function EquityCurve({ data, evData, showEV = false }: EquityCurveProps) 
   });
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 h-125">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-muted text-xs uppercase tracking-wider">
-          Equity Curve
-        </div>
-        {evData && showEV && (
-          <div className="text-xs text-muted flex items-center gap-2">
-            <span className="inline-flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-green-500 rounded"></span>
-              <span>EV Line</span>
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-blue-500/30 rounded"></span>
-              <span>Cone</span>
-            </span>
-          </div>
-        )}
-      </div>
-      <ResponsiveContainer width="100%" height={500}>
+    <div className="h-full w-full">
+      <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={combinedData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <XAxis
             dataKey="date"
             stroke="#737373"
-            fontSize={10}
+            fontSize={9}
             tickFormatter={(v) => {
               if (!v) return "";
               const d = new Date(v);
@@ -86,7 +69,7 @@ export function EquityCurve({ data, evData, showEV = false }: EquityCurveProps) 
           />
           <YAxis
             stroke="#737373"
-            fontSize={10}
+            fontSize={9}
             tickFormatter={(v) => {
               if (v >= 1000000) return `£${(v / 1000000).toFixed(1)}M`;
               if (v >= 1000) return `£${(v / 1000).toFixed(0)}K`;
