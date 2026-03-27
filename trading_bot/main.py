@@ -45,6 +45,7 @@ def write_session_report(session_name: str):
         wins = [t for t in session_trades if t.pnl_pct > 0]
         losses = [t for t in session_trades if t.pnl_pct < 0]
         skips = [t for t in session_trades if t.direction == "SKIP"]
+        cancelled = [t for t in session_trades if t.exit_reason == "CANCELLED"]
         
         total_pnl = sum(t.pnl_pct for t in session_trades)
         
@@ -53,11 +54,17 @@ def write_session_report(session_name: str):
             f.write(f"SESSION REPORT - {session_name} - {datetime.utcnow().isoformat()}\n")
             f.write(f"{'='*60}\n")
             
-            f.write(f"Trades: {len(session_trades)} (wins: {len(wins)}, losses: {len(losses)}, skips: {len(skips)})\n")
+            f.write(f"Trades: {len(wins + losses)} (wins: {len(wins)}, losses: {len(losses)})\n")
+            f.write(f"Skips: {len(skips)}\n")
+            if cancelled:
+                f.write(f"Cancelled: {len(cancelled)} (margin rejected)\n")
             f.write(f"P&L: {total_pnl:.2f}%\n\n")
             
             for t in session_trades:
-                f.write(f"  - {t.pair} {t.direction} {t.exit_reason} pnl={t.pnl_pct:.2f}%\n")
+                if t.exit_reason == "CANCELLED":
+                    f.write(f"  - {t.pair} {t.direction} CANCELLED entry={t.entry_price:.5f}\n")
+                else:
+                    f.write(f"  - {t.pair} {t.direction} {t.exit_reason} pnl={t.pnl_pct:.2f}%\n")
             
             f.write(f"\nBot Uptime: {int((datetime.utcnow() - state.started_at).total_seconds())}s\n")
     except Exception as e:

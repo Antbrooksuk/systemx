@@ -71,7 +71,20 @@ class OrderManager:
                 )
 
                 order = result.get("orderCreateTransaction", {})
+                cancel = result.get("orderCancelTransaction", {})
                 order_id = str(order.get("id", ""))
+
+                if cancel.get("id") and order_id:
+                    cancel_reason = cancel.get("reason", "")
+                    log.warning(f"Order {order_id} cancelled by OANDA: {cancel_reason}")
+                    if "MARGIN" in cancel_reason.upper() or "INSUFFICIENT" in cancel_reason.upper():
+                        units = int(units / 2)
+                        if abs(units) < 1000:
+                            log.error(f"Failed to place {pair} order: margin insufficient even at {abs(units)} units")
+                            return None
+                        log.warning(f"Margin rejected, retrying {pair} with {abs(units)} units (attempt {attempt + 2})")
+                        continue
+                    return None
 
                 if order_id:
                     active = ActiveOrder(
@@ -135,8 +148,28 @@ class OrderManager:
                     if seconds_elapsed < 60:
                         log.info(f"Order {order_id} ({active_order.pair}) still pending ({seconds_elapsed:.0f}s ago)")
                         continue
+                    
+                    cancelled = FilledTrade(
+                        pair=active_order.pair,
+                        session=active_order.session,
+                        direction=active_order.direction,
+                        units=0,
+                        entry_time=active_order.placed_at,
+                        entry_price=active_order.entry_price,
+                        sl_price=active_order.sl_price,
+                        tp_price=active_order.tp_price,
+                        exit_time=datetime.utcnow(),
+                        exit_price=None,
+                        exit_reason="CANCELLED",
+                        pips=0,
+                        pnl_pct=0,
+                        oanda_trade_id=order_id,
+                    )
+                    state.add_trade(cancelled)
+                    state.mark_pair_traded(active_order.session, active_order.pair)
+                    
                     state.remove_order(order_id)
-                    log.info(f"Order {order_id} ({active_order.pair}) filled/removed")
+                    log.warning(f"Order {order_id} ({active_order.pair}) cancelled by OANDA")
                     continue
 
                 if candles_elapsed >= MAX_CANDLES:
