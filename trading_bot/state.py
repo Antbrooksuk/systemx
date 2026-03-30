@@ -76,11 +76,18 @@ class BotState:
     websocket_connected: bool = False
     last_candle_time: Optional[datetime] = None
     current_signal: Optional[dict] = None
-    total_pnl_pct: float = 0.0
     signal_results: list[SignalResult] = field(default_factory=list)
     checked_pairs: set[str] = field(default_factory=set)
     lock: threading.Lock = field(default_factory=threading.Lock)
     session_traded_pairs: set[str] = field(default_factory=set)
+
+    @property
+    def total_pnl_pct(self) -> float:
+        with self.lock:
+            return round(
+                sum(t.pnl_pct for t in self.filled_trades if t.direction != "SKIP"),
+                4,
+            )
 
     def mark_pair_traded(self, session: str, pair: str):
         with self.lock:
@@ -89,6 +96,16 @@ class BotState:
     def has_pair_traded(self, session: str, pair: str) -> bool:
         with self.lock:
             return f"{session}_{pair}" in self.session_traded_pairs
+
+    def has_pair_filled_in_session(self, session: str, pair: str) -> bool:
+        with self.lock:
+            return any(
+                t.pair == pair
+                and t.session == session
+                and t.direction not in ("SKIP",)
+                and t.exit_reason not in ("CANCELLED",)
+                for t in self.filled_trades
+            )
 
     def clear_session_trades(self):
         with self.lock:
@@ -111,7 +128,6 @@ class BotState:
                         except Exception as trade_error:
                             print(f"Failed to load trade {t.get('oanda_trade_id', 'unknown')}: {trade_error}")
                             continue
-                    self.total_pnl_pct = data.get('total_pnl_pct', 0.0)
             except Exception as e:
                 print(f"Failed to load trades from file: {e}")
 
@@ -157,7 +173,6 @@ class BotState:
             if existing:
                 return
             self.filled_trades.append(trade)
-            self.total_pnl_pct += trade.pnl_pct
             self.save_to_file()
 
     def add_signal_result(self, result: SignalResult):
@@ -231,8 +246,6 @@ class BotState:
 
     def get_status(self) -> dict:
         with self.lock:
-            session = "outside"
-            # Simple heuristic — caller should check session.py
             return {
                 "active_orders": len(self.active_orders),
                 "filled_trades": len(self.filled_trades),

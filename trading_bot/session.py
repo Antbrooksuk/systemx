@@ -1,7 +1,8 @@
-"""Session window timing — London 08:00-09:30, NY 14:30-16:00 UTC."""
+"""Session window timing — DST-aware local time conversion to UTC."""
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 
 @dataclass
@@ -10,54 +11,45 @@ class Session:
     pairs: list[str]
     start_time: time
     end_time: time
+    tz: ZoneInfo
 
 
 SESSIONS = [
-    Session("london", ["EURUSD", "GBPUSD"], time(8, 0), time(9, 30)),
-    Session("ny", ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], time(14, 30), time(16, 0)),
+    Session("london", ["EURUSD", "GBPUSD"], time(8, 0), time(9, 30), ZoneInfo("Europe/London")),
+    Session("ny", ["EURUSD", "GBPUSD", "USDJPY", "EURJPY"], time(9, 30), time(11, 0), ZoneInfo("America/New_York")),
 ]
 
 
+def _session_utc_times(session: Session, utc_now: datetime):
+    utc_aware = utc_now.replace(tzinfo=timezone.utc) if utc_now.tzinfo is None else utc_now
+    local_date = utc_aware.astimezone(session.tz).date()
+    start_utc = datetime.combine(local_date, session.start_time, tzinfo=session.tz).astimezone(timezone.utc).replace(tzinfo=None)
+    end_utc = datetime.combine(local_date, session.end_time, tzinfo=session.tz).astimezone(timezone.utc).replace(tzinfo=None)
+    return start_utc, end_utc
+
+
 def get_current_session() -> Optional[Session]:
-    now = datetime.utcnow().time()
+    now = datetime.utcnow()
     for session in SESSIONS:
-        if session.start_time <= now < session.end_time:
+        start_utc, end_utc = _session_utc_times(session, now)
+        if start_utc <= now < end_utc:
             return session
     return None
 
 
 def get_current_pair(session: Session, utc_now: datetime) -> Optional[str]:
-    london = SESSIONS[0]
-    ny = SESSIONS[1]
-
-    london_start = utc_now.replace(hour=8, minute=0, second=0, microsecond=0)
-    london_end = utc_now.replace(hour=9, minute=30, second=0, microsecond=0)
-    ny_start = utc_now.replace(hour=14, minute=30, second=0, microsecond=0)
-    ny_end = utc_now.replace(hour=16, minute=0, second=0, microsecond=0)
-
-    if utc_now >= london_start and utc_now < london_end:
-        minutes_in = int((utc_now - london_start).total_seconds() / 60)
+    start_utc, end_utc = _session_utc_times(session, utc_now)
+    if start_utc <= utc_now < end_utc:
+        minutes_in = int((utc_now - start_utc).total_seconds() / 60)
         pair_index = minutes_in // 5
-        if pair_index < len(london.pairs):
-            return london.pairs[pair_index]
-        return None
-
-    if utc_now >= ny_start and utc_now < ny_end:
-        minutes_in = int((utc_now - ny_start).total_seconds() / 60)
-        pair_index = minutes_in // 5
-        if pair_index < len(ny.pairs):
-            return ny.pairs[pair_index]
-        return None
-
+        if pair_index < len(session.pairs):
+            return session.pairs[pair_index]
     return None
 
 
 def session_seconds_remaining(session: Session, utc_now: datetime) -> int:
-    if session.name == "london":
-        end = utc_now.replace(hour=9, minute=30, second=0, microsecond=0)
-    else:
-        end = utc_now.replace(hour=16, minute=0, second=0, microsecond=0)
-    return max(0, int((end - utc_now).total_seconds()))
+    _, end_utc = _session_utc_times(session, utc_now)
+    return max(0, int((end_utc - utc_now).total_seconds()))
 
 
 def candle_countdown(utc_now: datetime) -> int:
@@ -68,16 +60,10 @@ def candle_countdown(utc_now: datetime) -> int:
 
 
 def get_session_start_dt(session: Session, utc_now: datetime) -> datetime:
-    """Get today's session start datetime."""
-    if session.name == "london":
-        return utc_now.replace(hour=8, minute=0, second=0, microsecond=0)
-    else:
-        return utc_now.replace(hour=14, minute=30, second=0, microsecond=0)
+    start_utc, _ = _session_utc_times(session, utc_now)
+    return start_utc
 
 
 def get_session_end_dt(session: Session, utc_now: datetime) -> datetime:
-    """Get today's session end datetime."""
-    if session.name == "london":
-        return utc_now.replace(hour=9, minute=30, second=0, microsecond=0)
-    else:
-        return utc_now.replace(hour=16, minute=0, second=0, microsecond=0)
+    _, end_utc = _session_utc_times(session, utc_now)
+    return end_utc

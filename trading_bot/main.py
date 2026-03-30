@@ -38,34 +38,39 @@ poll_thread: threading.Thread | None = None
 SESSION_REPORT_FILE = Path(__file__).parent / "session_reports.txt"
 
 def write_session_report(session_name: str):
-    """Write permanent session report to file"""
     try:
-        session_trades = [t for t in state.filled_trades if t.session == session_name]
-        
+        today = datetime.utcnow().date()
+        session_trades = [
+            t for t in state.filled_trades
+            if t.session == session_name
+            and t.entry_time
+            and (t.entry_time.date() == today or (t.entry_time.tzinfo and t.entry_time.date() == today))
+        ]
+
         wins = [t for t in session_trades if t.pnl_pct > 0]
         losses = [t for t in session_trades if t.pnl_pct < 0]
         skips = [t for t in session_trades if t.direction == "SKIP"]
         cancelled = [t for t in session_trades if t.exit_reason == "CANCELLED"]
-        
+
         total_pnl = sum(t.pnl_pct for t in session_trades)
-        
+
         with open(SESSION_REPORT_FILE, "a") as f:
             f.write(f"\n{'='*60}\n")
             f.write(f"SESSION REPORT - {session_name} - {datetime.utcnow().isoformat()}\n")
             f.write(f"{'='*60}\n")
-            
+
             f.write(f"Trades: {len(wins + losses)} (wins: {len(wins)}, losses: {len(losses)})\n")
             f.write(f"Skips: {len(skips)}\n")
             if cancelled:
                 f.write(f"Cancelled: {len(cancelled)} (margin rejected)\n")
             f.write(f"P&L: {total_pnl:.2f}%\n\n")
-            
+
             for t in session_trades:
                 if t.exit_reason == "CANCELLED":
                     f.write(f"  - {t.pair} {t.direction} CANCELLED entry={t.entry_price:.5f}\n")
                 else:
                     f.write(f"  - {t.pair} {t.direction} {t.exit_reason} pnl={t.pnl_pct:.2f}%\n")
-            
+
             f.write(f"\nBot Uptime: {int((datetime.utcnow() - state.started_at).total_seconds())}s\n")
     except Exception as e:
         log.error(f"Failed to write session report: {e}")
@@ -76,17 +81,25 @@ def poll_loop():
     while running:
         try:
             current_session = get_current_session()
-            session_name = current_session.name if current_session else "live"
+
+            # Use last known session name for order/trade checks when between sessions
+            if current_session:
+                session_name = current_session.name
+            elif last_session:
+                session_name = last_session.name
+            else:
+                session_name = "inter-session"
+
             order_manager.check_and_manage_orders(session=session_name)
             order_manager.check_closed_trades(session=session_name)
 
             if current_session:
                 check_session_signals(current_session)
-                
+
             # Check if session ended
             if last_session and current_session is None:
                 write_session_report(last_session.name)
-                
+
             last_session = current_session
 
         except Exception as e:
@@ -97,30 +110,35 @@ def poll_loop():
 
 def check_session_signals(session):
     from trading_bot.state import FilledTrade
-    
+
     log.info(f"=== SESSION CHECK: {session.name} ===")
-    
+
     if getattr(state, "_last_checked_session", None) != session.name:
         state.checked_pairs = set()
         state._last_checked_session = session.name
         state.clear_session_trades()
         log.info(f"=== NEW SESSION START: {session.name} ===")
-    
+
     now = datetime.utcnow()
     session_start_dt = pd.Timestamp(get_session_start_dt(session, now)).tz_localize("UTC")
-    
+
     for pair in session.pairs:
         log.info(f"--- Checking {pair} ---")
         try:
+            # Already have a filled trade for this pair+session? Skip.
+            if state.has_pair_filled_in_session(session.name, pair):
+                log.info(f"{pair}: SKIP - already filled trade in session {session.name}")
+                continue
+
             df = client.get_candles_df(pair, count=300, granularity="M5")
             if df.empty:
                 log.warning(f"{pair}: No candle data")
                 continue
 
             df = df.sort_index()
-            
+
             session_candles = df[df.index >= session_start_dt].copy()
-            
+
             pd_candles = df[(df.index < session_start_dt)].copy()
             if len(pd_candles) < 10:
                 log.info(f"{pair}: SKIP - insufficient previous day data")
@@ -133,7 +151,7 @@ def check_session_signals(session):
             session_end_dt = get_session_end_dt(session, now)
             session_end_ts = pd.Timestamp(session_end_dt).tz_localize("UTC")
             window_open_candles = session_candles[(session_candles.index >= session_start_dt) & (session_candles.index < session_end_ts)]
-            
+
             now_ts = pd.Timestamp(now).tz_localize("UTC")
             minutes_since_open = (now_ts - session_start_dt).total_seconds() / 60
             log.info(f"{pair}: minutes_since_open={minutes_since_open:.1f}, window_end={session_end_ts}")
@@ -146,13 +164,13 @@ def check_session_signals(session):
                 continue
 
             signal = run_signal(pd_candles, window_open_candles, pair)
-            
+
             log.info(f"{pair}: Signal={signal['signal']}, reason={signal.get('reason', 'N/A')}")
 
             if signal["signal"] == "SKIP":
                 log.info(f"{pair}: SKIPPED - {signal.get('reason', 'no signal')}")
                 already_recorded = any(
-                    t.pair == pair and t.exit_reason == "SKIP"
+                    t.pair == pair and t.exit_reason == "SKIP" and t.session == session.name
                     for t in state.filled_trades
                 )
                 if not already_recorded:
@@ -175,7 +193,7 @@ def check_session_signals(session):
 
             if signal["signal"] in ("LONG", "SHORT"):
                 state.current_signal = signal
-                log.info(f"{pair}: {signal['signal']} at {signal.get('entry_formatted', 'N/A')} (SL:{signal.get('sl_formatted', 'N/A')} TP:{signal.get('tp_formatted', 'N/A')})")
+                log.info(f"{pair}: {signal['direction']} at {signal.get('entry_formatted', 'N/A')} (SL:{signal.get('sl_formatted', 'N/A')} TP:{signal.get('tp_formatted', 'N/A')})")
 
                 has_existing = any(
                     o.pair == pair
@@ -183,6 +201,11 @@ def check_session_signals(session):
                 )
                 if has_existing:
                     log.info(f"{pair}: SKIP - already has open order in state")
+                    state.current_signal = None
+                    continue
+
+                if state.has_pair_traded(session.name, pair):
+                    log.info(f"{pair}: SKIP - already traded in session {session.name}")
                     state.current_signal = None
                     continue
 
@@ -205,19 +228,18 @@ def check_session_signals(session):
 
                 if has_pending_oanda:
                     log.info(f"{pair}: SKIP - pending order exists in OANDA")
+                    state.mark_pair_traded(session.name, pair)
                     state.current_signal = None
                     continue
-                    
+
                 if has_open:
                     log.info(f"{pair}: SKIP - open trade exists in OANDA")
                     state.mark_pair_traded(session.name, pair)
                     state.current_signal = None
                     continue
-                    
-                if state.has_pair_traded(session.name, pair):
-                    log.info(f"{pair}: SKIP - already traded in session {session.name}")
-                    state.current_signal = None
-                    continue
+
+                # Mark pair as traded BEFORE placing order to prevent duplicates
+                state.mark_pair_traded(session.name, pair)
 
                 log.info(f"=== ORDER PLACED: {pair} {signal['direction']} entry={signal['entry']} SL={signal['sl']} TP={signal['tp']} ===")
                 order_id = order_manager.place_entry(
@@ -230,10 +252,11 @@ def check_session_signals(session):
                 )
                 if order_id:
                     log.info(f"=== ORDER SUCCESS: {order_id} {pair} {signal['direction']} ===")
-                    state.mark_pair_traded(session.name, pair)
                     state.current_signal = None
                 else:
                     log.error(f"=== ORDER FAILED: {pair} ===")
+                    # Unmark so it can be retried on next poll
+                    state.session_traded_pairs.discard(f"{session.name}_{pair}")
 
         except Exception as e:
             log.error(f"Signal check error for {pair}: {e}")
@@ -286,6 +309,8 @@ def status():
             "equity": account.equity,
             "unrealized_pl": account.unrealized_pl,
             "currency": account.currency,
+            "margin_used": account.margin_used,
+            "margin_available": account.margin_available,
         }
         STARTING_BALANCE = 2000.0
         total_pnl_pct = round((account.balance - STARTING_BALANCE) / STARTING_BALANCE * 100, 2)
@@ -293,7 +318,6 @@ def status():
         account_info = None
         total_pnl_pct = 0.0
 
-    # Get session trade summary
     session_summary = {}
     for trade in state.filled_trades:
         if trade.session not in session_summary:
@@ -323,17 +347,13 @@ def status():
 
 @app.get("/report")
 def full_report():
-    """Full detailed report of all trades, skips, and decisions"""
-    
-    # Get OANDA state
     try:
         oanda_orders = client.get_orders()
         oanda_trades = client.get_open_trades()
-    except:
+    except Exception:
         oanda_orders = []
         oanda_trades = []
-    
-    # Build detailed trade list
+
     trades_detail = []
     for t in state.filled_trades:
         trades_detail.append({
@@ -348,8 +368,7 @@ def full_report():
             "entry_time": t.entry_time.isoformat() if t.entry_time else None,
             "exit_time": t.exit_time.isoformat() if t.exit_time else None,
         })
-    
-    # Recent activity log
+
     recent_logs = []
     try:
         log_path = Path(__file__).parent / "logs" / "bot.log"
@@ -357,9 +376,9 @@ def full_report():
             with open(log_path) as f:
                 lines = f.readlines()
                 recent_logs = [l.strip() for l in lines[-100:]]
-    except:
+    except Exception:
         pass
-    
+
     return {
         "bot_uptime_seconds": int((datetime.utcnow() - state.started_at).total_seconds()),
         "current_session": get_current_session().name if get_current_session() else None,
@@ -374,7 +393,6 @@ def full_report():
 
 @app.get("/session-reports")
 def get_session_reports():
-    """Get permanent session reports as text"""
     try:
         if SESSION_REPORT_FILE.exists():
             with open(SESSION_REPORT_FILE, "r") as f:
@@ -383,7 +401,7 @@ def get_session_reports():
             content = "No session reports yet."
     except Exception as e:
         content = f"Error reading reports: {e}"
-    
+
     return {"reports": content}
 
 
@@ -403,7 +421,7 @@ def oanda_trades():
         closed = client.get_trade_history(count=100)
         open_trades = client.get_open_trades()
         pending = client.get_orders()
-        
+
         return {
             "open_trades": [
                 {
@@ -464,7 +482,7 @@ def oanda_debug():
         account = client.get_account()
         open_trades = client.get_open_trades()
         pending_orders = client.get_orders()
-        
+
         return {
             "status": "connected",
             "account_id": client.account_id,
@@ -472,7 +490,9 @@ def oanda_debug():
                 "balance": account.balance,
                 "currency": account.currency,
                 "unrealized_pl": account.unrealized_pl,
-                " NAV": account.equity,
+                "NAV": account.equity,
+                "margin_used": account.margin_used,
+                "margin_available": account.margin_available,
             },
             "open_trades_count": len(open_trades),
             "pending_orders_count": len(pending_orders),
@@ -488,9 +508,6 @@ def get_logs(level: str | None = None, limit: int = 50):
     from trading_bot.log_config import get_recent_logs
     logs = get_recent_logs(level, limit)
     return {"logs": logs, "count": len(logs)}
-
-
-
 
 
 @app.get("/live-trades")

@@ -114,7 +114,7 @@ export default function LivePage() {
   const [sessionReports, setSessionReports] = useState("");
   const isConnected = !!state;
 
-  const STARTING_BALANCE = 3000;
+  const STARTING_BALANCE = 2000;
 
   useEffect(() => {
     const fetchReports = async () => {

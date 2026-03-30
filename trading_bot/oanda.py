@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import pandas as pd
 import httpx
@@ -51,6 +51,8 @@ class AccountInfo:
     equity: float
     unrealized_pl: float
     currency: str
+    margin_used: float = 0.0
+    margin_available: float = 0.0
 
 
 class OANDAClient:
@@ -81,7 +83,7 @@ class OANDAClient:
             if resp.status_code >= 400:
                 try:
                     error_body = resp.json()
-                except:
+                except Exception:
                     error_body = resp.text
                 raise httpx.HTTPStatusError(
                     f"OANDA API error {resp.status_code}: {error_body}",
@@ -148,6 +150,8 @@ class OANDAClient:
             equity=float(a.get("NAV", a.get("equity", "0"))),
             unrealized_pl=float(a["unrealizedPL"]),
             currency=a["currency"],
+            margin_used=float(a.get("marginUsed", 0)),
+            margin_available=float(a.get("marginAvailable", 0)),
         )
 
     def get_orders(self, state_filter: str = "PENDING") -> list[dict]:
@@ -181,11 +185,15 @@ class OANDAClient:
         sl_price: Optional[float] = None,
         tp_price: Optional[float] = None,
         trade_id: Optional[str] = None,
+        gtd_time: Optional[str] = None,
     ) -> dict:
         units_str = str(units)
 
         oanda_symbol = self.to_oanda_symbol(instrument)
         price_fmt = "%.3f" if "JPY" in oanda_symbol else "%.5f"
+
+        if gtd_time is None:
+            gtd_time = (datetime.now(timezone.utc) + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         order: dict = {
             "order": {
@@ -193,7 +201,7 @@ class OANDAClient:
                 "instrument": oanda_symbol,
                 "units": units_str,
                 "timeInForce": "GTD",
-                "gtdTime": (datetime.utcnow() + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "gtdTime": gtd_time,
             }
         }
 
