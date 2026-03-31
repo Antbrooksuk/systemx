@@ -72,13 +72,13 @@ class OANDAClient:
         return mapping.get(oanda_symbol, oanda_symbol.replace("_", ""))
 
     def _get(self, path: str, params: Optional[dict] = None) -> dict:
-        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
+        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=10) as client:
             resp = client.get(path, params=params)
             resp.raise_for_status()
             return resp.json()
 
     def _post(self, path: str, data: Optional[dict] = None) -> dict:
-        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
+        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=10) as client:
             resp = client.post(path, json=data)
             if resp.status_code >= 400:
                 try:
@@ -93,19 +93,19 @@ class OANDAClient:
             return resp.json()
 
     def _put(self, path: str, data: dict) -> dict:
-        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
+        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=10) as client:
             resp = client.put(path, json=data)
             resp.raise_for_status()
             return resp.json()
 
     def _patch(self, path: str, data: dict) -> dict:
-        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
+        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=10) as client:
             resp = client.patch(path, json=data)
             resp.raise_for_status()
             return resp.json()
 
     def _delete(self, path: str) -> dict:
-        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
+        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=10) as client:
             resp = client.delete(path)
             resp.raise_for_status()
             return resp.json()
@@ -242,7 +242,7 @@ class OANDAClient:
 
     def _close_trade(self, trade_id: str, data: dict) -> dict:
         path = f"/v3/accounts/{self.account_id}/trades/{trade_id}/close"
-        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30) as client:
+        with httpx.Client(base_url=self.base_url, headers=self.headers, timeout=10) as client:
             resp = client.put(path, json=data)
             resp.raise_for_status()
             return resp.json()

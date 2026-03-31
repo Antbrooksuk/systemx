@@ -32,6 +32,7 @@ app.add_middleware(
 client = OANDAClient()
 order_manager = OrderManager(client)
 running = True
+shutdown_event = threading.Event()
 poll_thread: threading.Thread | None = None
 
 
@@ -78,11 +79,10 @@ def write_session_report(session_name: str):
 
 def poll_loop():
     last_session = None
-    while running:
+    while not shutdown_event.is_set():
         try:
             current_session = get_current_session()
 
-            # Use last known session name for order/trade checks when between sessions
             if current_session:
                 session_name = current_session.name
             elif last_session:
@@ -96,7 +96,6 @@ def poll_loop():
             if current_session:
                 check_session_signals(current_session)
 
-            # Check if session ended
             if last_session and current_session is None:
                 write_session_report(last_session.name)
 
@@ -105,7 +104,7 @@ def poll_loop():
         except Exception as e:
             log.error(f"Poll error: {e}")
 
-        time.sleep(30)
+        shutdown_event.wait(timeout=30)
 
 
 def check_session_signals(session):
@@ -276,6 +275,7 @@ def startup():
 def shutdown():
     global running
     running = False
+    shutdown_event.set()
     log.info("SYSTEM-X Bot shutting down...")
 
 
