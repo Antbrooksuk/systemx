@@ -78,7 +78,7 @@ class BotState:
     current_signal: Optional[dict] = None
     signal_results: list[SignalResult] = field(default_factory=list)
     checked_pairs: set[str] = field(default_factory=set)
-    lock: threading.Lock = field(default_factory=threading.Lock)
+    lock: threading.RLock = field(default_factory=threading.RLock)
     session_traded_pairs: set[str] = field(default_factory=set)
 
     @property
